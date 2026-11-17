@@ -307,7 +307,7 @@
             evt.currentTarget.classList.add('active');
         }
 
-        function showLoader(text = 'Procesando...') {
+        function showLoader(text = 'Cargando...') {
             document.getElementById('loader-text').innerText = text;
             document.getElementById('loader').style.display = 'flex';
         }
@@ -338,7 +338,7 @@
                 Swal.fire('Atención', 'Datos no cargados, espera 2 segundos.', 'warning');
                 return;
             }
-            // Corrección aplicada: String estricto
+            
             let user = db.usuarios.find(u => String(u.pin) === String(pin) && u.rol === 'ADMIN' && u.activo === 'SI');
             
             if (user) {
@@ -346,7 +346,6 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('user-info').innerHTML = `<i class="fas fa-user-circle mr-2"></i>${user.nombre}`;
                 
-                // Setear mes actual por defecto para el informe
                 let date = new Date();
                 document.getElementById('report-start').value = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
                 document.getElementById('report-end').value = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -359,7 +358,6 @@
         
         function cerrarSesion() { location.reload(); }
 
-        // PETICIÓN UNIVERSAL POST
         async function enviarPOST(action, payload) {
             showLoader('Guardando cambios...');
             try {
@@ -376,8 +374,6 @@
             }
             hideLoader();
         }
-
-        // ================= FUNCIONES RENDER (Pintar en pantalla) =================
 
         function renderizarTodo() {
             renderProductos();
@@ -408,7 +404,7 @@
         function renderClientes() {
             let html = '';
             db.clientes.forEach(c => {
-                if(c.id === 'CLI-00') return; // Ocultar cliente mostrador general
+                if(c.id === 'CLI-00') return;
                 html += `<tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-4 font-bold text-slate-700">${c.nombre} <br><span class="text-xs text-slate-400 font-normal"><i class="fas fa-sync-alt"></i> Ciclo: ${c.ciclo_dias} días</span></td>
                     <td class="p-4 text-slate-600"><i class="fas fa-phone-alt text-xs mr-1 text-slate-400"></i>${c.telefono}</td>
@@ -437,7 +433,7 @@
                     <button onclick="abrirModalRepartidor('${r.id}')" class="absolute top-3 right-3 text-white/50 hover:text-white transition transform hover:rotate-90"><i class="fas fa-cog text-xl"></i></button>
                     <div class="px-6 pb-6 relative -mt-8 text-center">
                         <div class="bg-white w-16 h-16 rounded-full flex items-center justify-center text-2xl text-indigo-600 shadow-md mx-auto mb-3 border-4 border-slate-50"><i class="fas fa-motorcycle"></i></div>
-                        <h3 class="font-black text-lg text-slate-800">${r.nombre}</h3>
+                        <h3 class="font-bold text-lg">${r.nombre}</h3>
                         <p class="text-sm font-bold text-slate-500 bg-slate-100 rounded-full px-3 py-1 inline-block mt-2 mb-3 shadow-inner">${r.vehiculo_placa}</p>
                         <div class="text-sm text-slate-600 mb-1"><i class="fas fa-phone text-xs mr-2 opacity-50"></i>${r.telefono}</div>
                         <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
@@ -486,18 +482,13 @@
             document.getElementById('lista-usuarios').innerHTML = html;
         }
 
-        // ================= FUNCIONES DE MODALES COMPLETAS =================
-
-        // 1. Modal Producto
+        // ================= FUNCIONES DE MODALES =================
         async function abrirModalProducto(id = null) {
             let p = id ? db.productos.find(x => x.id === id) : {};
             let html = `
                 <div class="text-left">
                     <label class="swal-label">Nombre del Producto</label>
                     <input id="prod-nom" class="swal-custom-input" placeholder="Ej: Cilindro 33 lb" value="${p.nombre||''}">
-                    
-                    <label class="swal-label">Capacidad (Libras)</label>
-                    <input id="prod-lib" type="number" class="swal-custom-input" placeholder="33, 40 o 100" value="${p.libras||''}">
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -509,27 +500,41 @@
                             <input id="prod-pvp" type="number" class="swal-custom-input" value="${p.precio_venta||''}">
                         </div>
                     </div>
+
+                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 mt-2 shadow-inner">
+                        <label class="swal-label text-center mb-3 text-indigo-800"><i class="fas fa-boxes mr-1"></i> Ajuste Físico de Inventario</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="swal-label text-center text-emerald-600">LLENOS</label>
+                                <input id="prod-llenos" type="number" class="swal-custom-input m-0 p-2 text-center text-emerald-600 font-black text-xl" value="${p.stock_llenos||0}">
+                            </div>
+                            <div>
+                                <label class="swal-label text-center text-rose-600">VACÍOS</label>
+                                <input id="prod-vacios" type="number" class="swal-custom-input m-0 p-2 text-center text-rose-600 font-black text-xl" value="${p.stock_vacios||0}">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-center text-slate-400 font-bold mt-2 leading-tight">Al guardar, estas cantidades reemplazarán el stock actual en bodega central.</p>
+                    </div>
                 </div>
             `;
-            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Producto' : 'Crear Producto', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'Guardar' });
+            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Producto' : 'Crear Producto', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'Guardar Ajuste' });
             
             if(formValues) {
                 let data = {
                     id: id || 'PROD-' + Date.now(),
                     nombre: document.getElementById('prod-nom').value,
-                    libras: document.getElementById('prod-lib').value,
+                    libras: p.libras || 0,
                     costo: document.getElementById('prod-cst').value,
                     precio_venta: document.getElementById('prod-pvp').value,
-                    stock_llenos: p.stock_llenos || 0,
-                    stock_vacios: p.stock_vacios || 0,
+                    stock_llenos: document.getElementById('prod-llenos').value,
+                    stock_vacios: document.getElementById('prod-vacios').value,
                     activo: p.activo || 'SI'
                 };
-                if(!data.nombre || !data.precio_venta) return Swal.fire('Faltan datos', '', 'error');
+                if(!data.nombre || !data.precio_venta) return Swal.fire('Error', 'Faltan datos obligatorios', 'error');
                 enviarPOST('saveProducto', { data: data });
             }
         }
 
-        // 2. Modal Cliente (CON ETIQUETAS DE DESCUENTO CLARAS)
         async function abrirModalCliente(id = null) {
             let c = id ? db.clientes.find(x => x.id === id) : {};
             let html = `
@@ -551,10 +556,7 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="swal-label">Tipo</label>
-                            <select id="cli-tipo" class="swal-custom-input">
-                                <option value="Hogar" ${c.tipo=='Hogar'?'selected':''}>Hogar</option>
-                                <option value="Negocio" ${c.tipo=='Negocio'?'selected':''}>Negocio</option>
-                            </select>
+                            <select id="cli-tipo" class="swal-custom-input"><option value="Hogar" ${c.tipo=='Hogar'?'selected':''}>Hogar</option><option value="Negocio" ${c.tipo=='Negocio'?'selected':''}>Negocio</option></select>
                         </div>
                         <div>
                             <label class="swal-label">Ciclo (Días)</label>
@@ -574,116 +576,75 @@
             `;
             let { value: formValues } = await Swal.fire({ title: id ? 'Editar Cliente' : 'Nuevo Cliente', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'Guardar', width: '600px' });
             if(formValues) {
-                let data = {
-                    id: id || 'CLI-' + Date.now(),
-                    nombre: document.getElementById('cli-nom').value, telefono: document.getElementById('cli-tel').value,
-                    barrio: document.getElementById('cli-bar').value, direccion: document.getElementById('cli-dir').value,
-                    referencia: document.getElementById('cli-ref').value, tipo: document.getElementById('cli-tipo').value,
-                    ciclo_dias: document.getElementById('cli-cic').value, desc_100: document.getElementById('d100').value,
-                    desc_40: document.getElementById('d40').value, desc_30: document.getElementById('d30').value,
-                    ultima_compra: c.ultima_compra || '', oculto_alerta: c.oculto_alerta || 'NO'
-                };
+                let data = { id: id || 'CLI-' + Date.now(), nombre: document.getElementById('cli-nom').value, telefono: document.getElementById('cli-tel').value, barrio: document.getElementById('cli-bar').value, direccion: document.getElementById('cli-dir').value, referencia: document.getElementById('cli-ref').value, tipo: document.getElementById('cli-tipo').value, ciclo_dias: document.getElementById('cli-cic').value, desc_100: document.getElementById('d100').value, desc_40: document.getElementById('d40').value, desc_30: document.getElementById('d30').value, ultima_compra: c.ultima_compra || '', oculto_alerta: c.oculto_alerta || 'NO' };
                 enviarPOST('saveCliente', { data: data });
             }
         }
 
-        // 3. Modal Repartidor
         async function abrirModalRepartidor(id = null) {
             let r = id ? db.repartidores.find(x => x.id === id) : {};
             let html = `
                 <div class="text-left">
                     <label class="swal-label">Nombre del Repartidor</label>
                     <input id="rep-nom" class="swal-custom-input" value="${r.nombre||''}">
-                    
                     <label class="swal-label">Vehículo / Placa</label>
                     <input id="rep-veh" class="swal-custom-input" placeholder="Ej: Moto 1 - ABC12D" value="${r.vehiculo_placa||''}">
-                    
                     <label class="swal-label">Número de Celular</label>
                     <input id="rep-tel" class="swal-custom-input" value="${r.telefono||''}">
-                    
                     <label class="swal-label text-indigo-700">PIN de Acceso a App (4 Dígitos)</label>
                     <input id="rep-pin" type="number" class="swal-custom-input font-mono tracking-widest text-center text-xl font-bold" value="${r.pin||''}">
                 </div>
             `;
             let { value: formValues } = await Swal.fire({ title: id ? 'Configurar Repartidor' : 'Nuevo Repartidor', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5' });
             if(formValues) {
-                let data = {
-                    id: id || 'REP-' + Date.now(),
-                    nombre: document.getElementById('rep-nom').value, vehiculo_placa: document.getElementById('rep-veh').value,
-                    telefono: document.getElementById('rep-tel').value, pin: document.getElementById('rep-pin').value,
-                    activo: r.activo || 'SI'
-                };
+                let data = { id: id || 'REP-' + Date.now(), nombre: document.getElementById('rep-nom').value, vehiculo_placa: document.getElementById('rep-veh').value, telefono: document.getElementById('rep-tel').value, pin: document.getElementById('rep-pin').value, activo: r.activo || 'SI' };
                 enviarPOST('saveRepartidor', { data: data });
             }
         }
 
-        // 4. Modal Gasto
         async function abrirModalGasto() {
             let date = new Date().toISOString().split('T')[0];
             let html = `
                 <div class="text-left">
                     <label class="swal-label">Fecha del Gasto</label>
                     <input id="gas-fec" type="date" class="swal-custom-input" value="${date}">
-                    
                     <label class="swal-label">Tipo de Gasto</label>
-                    <select id="gas-tip" class="swal-custom-input">
-                        <option value="FIJO">Gasto Fijo (Nómina, Arriendo, Luz, etc)</option>
-                        <option value="IMPREVISTO">Gasto Imprevisto / Extraordinario</option>
-                    </select>
-                    
+                    <select id="gas-tip" class="swal-custom-input"><option value="FIJO">Gasto Fijo (Nómina, Arriendo, Luz, etc)</option><option value="IMPREVISTO">Gasto Imprevisto / Extraordinario</option></select>
                     <label class="swal-label">Concepto / Motivo</label>
                     <input id="gas-con" class="swal-custom-input" placeholder="Ej: Pago publicidad radial">
-                    
                     <label class="swal-label text-rose-700">Monto del Gasto ($)</label>
                     <input id="gas-mon" type="number" class="swal-custom-input text-xl font-bold" placeholder="0">
                 </div>
             `;
             let { value: formValues } = await Swal.fire({ title: 'Registrar Gasto', html: html, showCancelButton: true, confirmButtonColor: '#e11d48' });
             if(formValues) {
-                let data = {
-                    id: 'GAS-' + Date.now(),
-                    fecha: document.getElementById('gas-fec').value, tipo_gasto: document.getElementById('gas-tip').value,
-                    origen: 'ADMIN', concepto: document.getElementById('gas-con').value, monto: document.getElementById('gas-mon').value
-                };
+                let data = { id: 'GAS-' + Date.now(), fecha: document.getElementById('gas-fec').value, tipo_gasto: document.getElementById('gas-tip').value, origen: 'ADMIN', concepto: document.getElementById('gas-con').value, monto: document.getElementById('gas-mon').value };
                 if(!data.concepto || !data.monto) return Swal.fire('Error', 'Concepto y Monto son obligatorios', 'error');
                 enviarPOST('saveGasto', { data: data });
             }
         }
 
-        // 5. Modal Usuario / Acceso
         async function abrirModalUsuario(id = null) {
             let u = id ? db.usuarios.find(x => x.id === id) : {};
             let html = `
                 <div class="text-left">
-                    <label class="swal-label">Nombre del Empleado/Responsable</label>
+                    <label class="swal-label">Nombre del Empleado</label>
                     <input id="usr-nom" class="swal-custom-input" value="${u.nombre||''}">
-                    
                     <label class="swal-label">Usuario / Alias</label>
                     <input id="usr-usr" class="swal-custom-input" value="${u.usuario||''}">
-                    
                     <label class="swal-label">Rol del Sistema</label>
-                    <select id="usr-rol" class="swal-custom-input">
-                        <option value="ADMIN" ${u.rol=='ADMIN'?'selected':''}>Administrador (Panel Gerencial)</option>
-                        <option value="POS" ${u.rol=='POS'?'selected':''}>Cajero POS (Ventas Patio)</option>
-                    </select>
-                    
+                    <select id="usr-rol" class="swal-custom-input"><option value="ADMIN" ${u.rol=='ADMIN'?'selected':''}>Administrador (Panel Gerencial)</option><option value="POS" ${u.rol=='POS'?'selected':''}>Cajero POS (Ventas Patio)</option></select>
                     <label class="swal-label text-indigo-700">PIN Secreto (4 Dígitos)</label>
                     <input id="usr-pin" type="number" class="swal-custom-input font-mono tracking-widest text-center text-xl font-bold" value="${u.pin||''}">
                 </div>
             `;
             let { value: formValues } = await Swal.fire({ title: id ? 'Editar Acceso' : 'Nuevo Usuario', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5' });
             if(formValues) {
-                let data = {
-                    id: id || 'USR-' + Date.now(),
-                    nombre: document.getElementById('usr-nom').value, usuario: document.getElementById('usr-usr').value,
-                    pin: document.getElementById('usr-pin').value, rol: document.getElementById('usr-rol').value,
-                    activo: u.activo || 'SI'
-                };
+                let data = { id: id || 'USR-' + Date.now(), nombre: document.getElementById('usr-nom').value, usuario: document.getElementById('usr-usr').value, pin: document.getElementById('usr-pin').value, rol: document.getElementById('usr-rol').value, activo: u.activo || 'SI' };
                 enviarPOST('saveUsuario', { data: data });
             }
         }
 
-        // 6. Modal Ingreso Mercancía
         async function abrirModalIngreso() {
             let options = db.productos.filter(p=>p.activo==='SI').map(p => `<option value="${p.id}|${p.nombre}|${p.costo}">${p.nombre}</option>`).join('');
             let html = `
@@ -693,40 +654,29 @@
                 <div class="text-left">
                     <label class="swal-label">Seleccionar Producto</label>
                     <select id="ing-prod" class="swal-custom-input">${options}</select>
-                    
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="swal-label">Cantidad a Sumar</label>
-                            <input id="ing-cant" type="number" class="swal-custom-input text-xl font-bold text-center" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="swal-label">Costo Unitario ($)</label>
-                            <input id="ing-costo" type="number" class="swal-custom-input text-center" placeholder="(Opcional)">
-                        </div>
+                        <div><label class="swal-label">Cantidad a Sumar</label><input id="ing-cant" type="number" class="swal-custom-input text-xl font-bold text-center" placeholder="0"></div>
+                        <div><label class="swal-label">Costo Unitario ($)</label><input id="ing-costo" type="number" class="swal-custom-input text-center" placeholder="(Opcional)"></div>
                     </div>
                 </div>
             `;
-            let { value: val } = await Swal.fire({ title: 'Ingreso de Mercancía Fluvial', html: html, showCancelButton: true, confirmButtonColor: '#059669', confirmButtonText: 'Registrar Ingreso' });
+            let { value: val } = await Swal.fire({ title: 'Ingreso Fluvial', html: html, showCancelButton: true, confirmButtonColor: '#059669', confirmButtonText: 'Registrar Ingreso' });
             if(val) {
-                let sel = document.getElementById('ing-prod').value.split('|');
-                let cst = document.getElementById('ing-costo').value || sel[2];
-                let cant = document.getElementById('ing-cant').value;
-                if(!cant || cant <= 0) return Swal.fire('Error', 'Debes ingresar una cantidad válida', 'error');
+                let sel = document.getElementById('ing-prod').value.split('|'); let cst = document.getElementById('ing-costo').value || sel[2]; let cant = document.getElementById('ing-cant').value;
+                if(!cant || cant <= 0) return Swal.fire('Error', 'Ingresa una cantidad válida', 'error');
                 let item = { producto_id: sel[0], producto_nombre: sel[1], cantidad: cant, costo_unitario: cst };
                 enviarPOST('ingresoMercanciaMultiple', { items: [item], observacion: 'Ingreso Manual Admin' });
             }
         }
 
-        // ================= INFORME Y EXCEL MEJORADOS =================
-
-        let datosParaExcel = []; // Guardará la matriz para armar el Excel
+        // ================= MODIFICACIÓN QUIRÚRGICA: GENERAR INFORME P&G CON COSTO REAL =================
+        let datosParaExcel = [];
 
         function generarInforme() {
             let start = document.getElementById('report-start').value;
             let end = document.getElementById('report-end').value;
             if(!start || !end) return Swal.fire('Atención', 'Selecciona el rango de fechas', 'warning');
             
-            // Filtro de ventas y gastos (las fechas del backend llegan como string ISO o 'yyyy-mm-dd')
             let vtas = db.ventas.filter(v => v.fecha >= start && v.fecha <= end);
             let gs = db.gastos.filter(g => g.fecha >= start && g.fecha <= end);
 
@@ -735,34 +685,24 @@
 
             let htmlCronologia = '';
             
-            // Preparar Matriz para Excel
-            datosParaExcel = [
-                ["INFORME GERENCIAL - GAS GUAINÍA MAF"],
-                ["Periodo:", start, "hasta", end],
-                [],
-                ["RESUMEN DE VENTAS POR PRESENTACIÓN"],
-                ["Tipo de Cilindro", "Unidades Vendidas", "Total Recaudado"]
-            ];
+            datosParaExcel = [ ["INFORME GERENCIAL - GAS GUAINÍA MAF"], ["Periodo:", start, "hasta", end], [], ["RESUMEN DE VENTAS POR PRESENTACIÓN"], ["Tipo de Cilindro", "Unidades Vendidas", "Total Recaudado"] ];
 
             vtas.sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora)).forEach(v => {
                 tVentas += Number(v.total || 0);
+                let payStr = v.metodo_pago; if(v.metodo_pago === 'Mixto') payStr = `Mixto (Ef: ${v.pago_efectivo}, Nq: ${v.pago_nequi}, Tr: ${v.pago_transf})`;
                 
-                let payStr = v.metodo_pago;
-                if(v.metodo_pago === 'Mixto') payStr = `Mixto (Ef: ${v.pago_efectivo}, Nq: ${v.pago_nequi}, Tr: ${v.pago_transf})`;
-                
-                // Llenar tabla cronológica
-                htmlCronologia += `<tr class="hover:bg-slate-50">
-                    <td class="p-3 text-slate-500 text-xs">${formFecha(v.fecha_hora)}</td>
-                    <td class="p-3 font-bold text-slate-700">${v.cliente_nombre || 'Mostrador'}</td>
-                    <td class="p-3 text-slate-600">${v.origen} ${v.repartidor_nombre ? ' - ' + v.repartidor_nombre : ''}</td>
-                    <td class="p-3 text-center"><span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs">${payStr}</span></td>
-                    <td class="p-3 text-right font-bold text-emerald-700">${formMoneda(v.total)}</td>
-                </tr>`;
+                htmlCronologia += `<tr class="hover:bg-slate-50"><td class="p-3 text-slate-500 text-xs">${formFecha(v.fecha_hora)}</td><td class="p-3 font-bold text-slate-700">${v.cliente_nombre || 'Mostrador'}</td><td class="p-3 text-slate-600">${v.origen} ${v.repartidor_nombre ? ' - ' + v.repartidor_nombre : ''}</td><td class="p-3 text-center"><span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs">${payStr}</span></td><td class="p-3 text-right font-bold text-emerald-700">${formMoneda(v.total)}</td></tr>`;
 
-                // Sumarizar cantidades
                 let items = JSON.parse(v.items_json || '[]');
                 items.forEach(it => {
-                    tCMV += (Number(it.cantidad) * Number(it.costo || 0));
+                    // AQUÍ ESTÁ EL ARREGLO: Extraemos el costo real cruzándolo con la base de datos de productos.
+                    let costoReal = 0;
+                    let prodBase = db.productos.find(p => p.id === it.producto_id);
+                    if(prodBase && prodBase.costo) { costoReal = Number(prodBase.costo); } 
+                    else { costoReal = Number(it.costo || 0); }
+
+                    tCMV += (Number(it.cantidad) * costoReal);
+                    
                     if(it.producto_nombre.includes('30') || it.producto_nombre.includes('33')) { qty30 += Number(it.cantidad); total30 += (Number(it.cantidad)*Number(it.precio)); }
                     if(it.producto_nombre.includes('40')) { qty40 += Number(it.cantidad); total40 += (Number(it.cantidad)*Number(it.precio)); }
                     if(it.producto_nombre.includes('100')) { qty100 += Number(it.cantidad); total100 += (Number(it.cantidad)*Number(it.precio)); }
@@ -774,7 +714,6 @@
             let tGastos = tFijos + tImprev;
             let uNeta = tVentas - tCMV - tGastos;
 
-            // Actualizar Tarjetas
             document.getElementById('ind-ventas').innerText = formMoneda(tVentas);
             document.getElementById('ind-cmv').innerText = formMoneda(tCMV);
             document.getElementById('ind-gastos').innerText = formMoneda(tGastos);
@@ -782,7 +721,6 @@
             lblUtil.innerText = formMoneda(uNeta);
             lblUtil.className = uNeta >= 0 ? "text-3xl font-black text-white" : "text-3xl font-black text-rose-300";
 
-            // Actualizar Tabla Resumen
             let hRes = `
                 <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 33/30 lb</td><td class="p-3 text-center font-black">${qty30}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total30)}</td></tr>
                 <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 40 lb</td><td class="p-3 text-center font-black">${qty40}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total40)}</td></tr>
@@ -790,44 +728,18 @@
                 <tr class="bg-indigo-50 border-t-2 border-indigo-200"><td class="p-4 font-black text-indigo-900">TOTALES PERIODO</td><td class="p-4 text-center font-black text-indigo-900 text-lg">${qty30+qty40+qty100} UND</td><td class="p-4 text-right font-black text-indigo-900 text-lg">${formMoneda(tVentas)}</td></tr>
             `;
             document.getElementById('lista-informe-ventas').innerHTML = hRes;
-            
-            // Actualizar Tabla Cronológica
             document.getElementById('lista-cronologica').innerHTML = htmlCronologia || '<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay ventas registradas en este periodo.</td></tr>';
 
-            // Completar Matriz Excel
-            datosParaExcel.push(["Cilindro 33/30 lb", qty30, total30]);
-            datosParaExcel.push(["Cilindro 40 lb", qty40, total40]);
-            datosParaExcel.push(["Cilindro 100 lb", qty100, total100]);
-            datosParaExcel.push(["TOTALES", qty30+qty40+qty100, tVentas]);
-            datosParaExcel.push([]);
-            datosParaExcel.push(["ESTADO DE RESULTADOS (P&G)"]);
-            datosParaExcel.push(["(+) Ingresos por Ventas:", "", tVentas]);
-            datosParaExcel.push(["(-) Costo Mercancía Vendida (CMV):", "", tCMV]);
-            datosParaExcel.push(["(-) Total Gastos Fijos e Imprevistos:", "", tGastos]);
-            datosParaExcel.push(["(=) UTILIDAD NETA REAL:", "", uNeta]);
-            datosParaExcel.push([]);
-            datosParaExcel.push(["DETALLE CRONOLÓGICO DE VENTAS"]);
-            datosParaExcel.push(["Fecha", "Hora", "Cliente", "Origen / Repartidor", "Metodo Pago", "Total Facturado"]);
-            vtas.forEach(v => {
-                let fecha = v.fecha_hora ? v.fecha_hora.split('T')[0] : v.fecha;
-                let hora = v.fecha_hora ? v.fecha_hora.split('T')[1].split('.')[0] : '';
-                datosParaExcel.push([fecha, hora, v.cliente_nombre, v.origen + (v.repartidor_nombre?' - '+v.repartidor_nombre:''), v.metodo_pago, Number(v.total)]);
-            });
+            datosParaExcel.push(["Cilindro 33/30 lb", qty30, total30]); datosParaExcel.push(["Cilindro 40 lb", qty40, total40]); datosParaExcel.push(["Cilindro 100 lb", qty100, total100]); datosParaExcel.push(["TOTALES", qty30+qty40+qty100, tVentas]); datosParaExcel.push([]); datosParaExcel.push(["ESTADO DE RESULTADOS (P&G)"]); datosParaExcel.push(["(+) Ingresos por Ventas:", "", tVentas]); datosParaExcel.push(["(-) Costo Mercancía Vendida (CMV):", "", tCMV]); datosParaExcel.push(["(-) Total Gastos Fijos e Imprevistos:", "", tGastos]); datosParaExcel.push(["(=) UTILIDAD NETA REAL:", "", uNeta]); datosParaExcel.push([]); datosParaExcel.push(["DETALLE CRONOLÓGICO DE VENTAS"]); datosParaExcel.push(["Fecha", "Hora", "Cliente", "Origen / Repartidor", "Metodo Pago", "Total Facturado"]);
+            vtas.forEach(v => { let fecha = v.fecha_hora ? v.fecha_hora.split('T')[0] : v.fecha; let hora = v.fecha_hora ? v.fecha_hora.split('T')[1].split('.')[0] : ''; datosParaExcel.push([fecha, hora, v.cliente_nombre, v.origen + (v.repartidor_nombre?' - '+v.repartidor_nombre:''), v.metodo_pago, Number(v.total)]); });
         }
 
         function exportarExcel() {
             if(datosParaExcel.length === 0) return Swal.fire('Error', 'Primero debes generar el informe para exportarlo.', 'error');
-            
-            // Usamos Array of Arrays para tener control total del diseño del Excel
-            let ws = XLSX.utils.aoa_to_sheet(datosParaExcel);
-            // Ajustar ancho de columnas
-            ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 35}, {wch: 25}, {wch: 15}, {wch: 20}];
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Informe_Gerencial");
-            XLSX.writeFile(wb, "Informe_GasGuainia_MAF.xlsx");
+            let ws = XLSX.utils.aoa_to_sheet(datosParaExcel); ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 35}, {wch: 25}, {wch: 15}, {wch: 20}];
+            let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Informe_Gerencial"); XLSX.writeFile(wb, "Informe_GasGuainia_MAF.xlsx");
         }
 
-        // Init
         syncData();
     </script>
 </body>
