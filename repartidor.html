@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Repartidor - Gas Guainía</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Nunito', 'sans-serif'] }, colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 900: '#0c4a6e' } } } } }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f1f5f9; overscroll-behavior: none; }
+        
+        .tab-content { display: none !important; }
+        .tab-content.active { display: block !important; animation: fadeUp 0.3s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Botones Navegación Inferior (Mobile App Style) */
+        .bottom-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; color: #94a3b8; transition: all 0.2s; padding: 0.5rem 0; }
+        .bottom-nav-btn.active { color: #0284c7; }
+        .bottom-nav-btn i { font-size: 1.25rem; margin-bottom: 0.25rem; }
+        .bottom-nav-btn.active i { transform: scale(1.1); }
+        .bottom-nav-btn span { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .swal-custom-input { width: 100%; padding: 1rem; margin: 0.5rem 0 1rem; border: 2px solid #e2e8f0; border-radius: 0.75rem; font-size: 1rem; font-weight: 800; color: #1e293b; background-color: #f8fafc; text-align: center;}
+        .swal-custom-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .swal-label { font-size: 0.75rem; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; text-align: left; margin-bottom: -0.25rem; }
+        .swal2-popup { border-radius: 1.5rem !important; }
+
+        /* Loader */
+        #loader { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 9999; justify-content: center; align-items: center; color: white; flex-direction: column; backdrop-filter: blur(5px); }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 4px solid #3b82f6; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-slate-800 font-sans h-[100dvh] flex flex-col overflow-hidden">
+
+    <!-- PANTALLA LOGIN -->
+    <div id="login-screen" class="fixed inset-0 bg-[#0f172a] z-[100] flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm text-center">
+            <div class="bg-brand-50 text-brand-600 w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-4"><i class="fas fa-motorcycle"></i></div>
+            <h2 class="text-2xl font-black text-slate-800 mb-1">APP CONDUCTOR</h2>
+            <p class="text-slate-500 mb-8 font-bold text-sm">Gas Guainía MAF</p>
+            
+            <label class="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">INGRESA TU PIN</label>
+            <input type="tel" id="login-pin" class="w-full text-center text-4xl tracking-[0.3em] p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl mb-6 font-black text-brand-600 focus:outline-none focus:border-brand-500" autocomplete="off" maxlength="4">
+            
+            <button onclick="iniciarSesion()" class="w-full bg-brand-600 active:bg-brand-700 text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 text-lg">INICIAR RUTA</button>
+        </div>
+    </div>
+
+    <!-- LOADER -->
+    <div id="loader"><div class="spinner"></div><span id="loader-text" class="font-bold tracking-wide text-sm text-brand-400">Conectando...</span></div>
+
+    <!-- HEADER APP MÓVIL -->
+    <header class="bg-brand-600 text-white p-4 shadow-md shrink-0 flex justify-between items-center z-20 relative rounded-b-2xl">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-user text-white"></i></div>
+            <div class="flex flex-col">
+                <span id="user-info" class="font-black text-lg leading-none tracking-tight">Repartidor</span>
+                <span class="text-[10px] font-bold text-brand-100 uppercase tracking-widest flex items-center mt-1"><div class="w-2 h-2 bg-emerald-400 rounded-full mr-1 animate-pulse"></div> En línea</span>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="syncData()" class="w-10 h-10 flex items-center justify-center bg-brand-700 active:bg-brand-800 rounded-xl text-white shadow-inner"><i class="fas fa-sync-alt"></i></button>
+            <button onclick="cerrarSesion()" class="w-10 h-10 flex items-center justify-center bg-rose-500 active:bg-rose-600 rounded-xl text-white shadow-inner"><i class="fas fa-power-off"></i></button>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL CON SCROLL -->
+    <main class="flex-1 overflow-y-auto relative p-4 pb-24 w-full max-w-md mx-auto">
+        
+        <!-- PESTAÑA 1: DOMICILIOS ASIGNADOS -->
+        <div id="tab-domicilios" class="tab-content active">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-black text-slate-800 tracking-tight">Tus Entregas</h2>
+                <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-black" id="contador-dom">0 Pendientes</span>
+            </div>
+            
+            <div class="flex flex-col gap-4" id="lista-domicilios">
+                <!-- Se inyecta por JS -->
+            </div>
+        </div>
+
+        <!-- PESTAÑA 2: VENTA EN CALLE -->
+        <div id="tab-calle" class="tab-content">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <div class="text-center mb-6">
+                    <div class="bg-brand-50 w-16 h-16 rounded-full flex items-center justify-center text-brand-500 text-2xl mx-auto mb-3"><i class="fas fa-bullhorn"></i></div>
+                    <h2 class="text-xl font-black text-slate-800 tracking-tight">Venta Rápida (Calle)</h2>
+                    <p class="text-xs font-bold text-slate-500 mt-1">Registra al cliente y envíale su recibo digital.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="swal-label">1. Buscar Cliente</label>
+                            <button onclick="modalNuevoCliente()" class="text-xs font-black text-brand-600 bg-brand-50 px-2 py-1 rounded-lg border border-brand-200 active:bg-brand-100"><i class="fas fa-plus"></i> NUEVO</button>
+                        </div>
+                        <select id="calle-cliente" class="swal-custom-input m-0 p-3 text-sm text-left"></select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="swal-label mb-1">2. Producto</label>
+                            <select id="calle-prod" class="swal-custom-input m-0 p-3 text-sm text-left bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="swal-label mb-1">Cant</label>
+                            <input type="number" id="calle-cant" class="swal-custom-input m-0 p-3 text-xl" value="1">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="swal-label mb-1">3. Forma de Pago</label>
+                        <select id="calle-pago" class="swal-custom-input m-0 p-3 text-sm bg-white">
+                            <option>Efectivo</option>
+                            <option>Nequi / Daviplata</option>
+                            <option>Transferencia Bancaria</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-8 border-t border-slate-100 border-dashed pt-6">
+                    <button onclick="registrarVentaCalle()" class="w-full bg-[#25D366] active:bg-[#128C7E] text-white font-black py-4 rounded-2xl shadow-lg shadow-green-500/30 transition-transform active:scale-95 text-lg flex items-center justify-center">
+                        <i class="fab fa-whatsapp mr-2 text-2xl"></i> COBRAR Y ENVIAR
+                    </button>
+                    <p class="text-[10px] text-center font-bold text-slate-400 mt-3">Esto actualizará el ciclo del cliente y no alterará el inventario hasta tu liquidación.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION (Fijo abajo) -->
+    <nav class="bg-white border-t border-slate-200 fixed bottom-0 w-full z-30 flex pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <button class="bottom-nav-btn active" onclick="openTab(event, 'tab-domicilios')">
+            <i class="fas fa-map-marked-alt"></i>
+            <span>Entregas</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="openTab(event, 'tab-calle')">
+            <i class="fas fa-truck"></i>
+            <span>Venta Calle</span>
+        </button>
+    </nav>
+
+    <!-- SCRIPTS CORE -->
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzVebT-EsVILWNRSO_B6DlmVxdn-HrFOMJvsMmcXCcVJMOb_mVTbxLd8OQamD2Aq-ugPw/exec';
+        let db = { usuarios: [], productos: [], clientes: [], repartidores: [], gastos: [], ventas: [], domicilios: [], despachos: [] };
+        
+        let sesionRepartidor = JSON.parse(localStorage.getItem('repartidor_GasGuainia')) || null;
+
+        const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+        
+        // Manejo de Tabs Móviles
+        function openTab(evt, tabName) { 
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); 
+            document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active')); 
+            document.getElementById(tabName).classList.add('active'); 
+            evt.currentTarget.classList.add('active'); 
+        }
+
+        const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 2500 });
+        function showLoader(text = 'Cargando...') { document.getElementById('loader-text').innerText = text; document.getElementById('loader').style.display = 'flex'; }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        // ================= INICIALIZACIÓN Y LOGIN =================
+        window.onload = async () => { 
+            if (sesionRepartidor) { 
+                document.getElementById('login-screen').style.display = 'none'; 
+                document.getElementById('user-info').innerText = sesionRepartidor.nombre.split(' ')[0]; 
+                await syncData(); 
+            } else { await syncData(); } 
+        };
+
+        async function syncData() {
+            try { 
+                let res = await fetch(API_URL + '?action=syncAll'); 
+                let json = await res.json(); 
+                if (json.status === 'ok') { 
+                    db = json; 
+                    if(sesionRepartidor) renderizarTodo(); 
+                } 
+            } catch (err) { Toast.fire({ icon: 'error', title: 'Sin conexión' }); }
+        }
+
+        async function enviarPOST(action, payload) {
+            showLoader('Enviando...');
+            try { 
+                let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: action, ...payload }) }); 
+                let json = await res.json(); 
+                if(json.status === 'ok') { await syncData(); hideLoader(); return true; } 
+                else { hideLoader(); Swal.fire('Error', json.message, 'warning'); return false; } 
+            } catch(e) { hideLoader(); Toast.fire({ icon: 'error', title: 'Fallo de internet' }); return false; }
+        }
+
+        function iniciarSesion() {
+            let pin = document.getElementById('login-pin').value; if(!db.repartidores || db.repartidores.length===0) return Toast.fire({ icon: 'info', title: 'Cargando base de datos...' });
+            
+            // Validamos que el PIN exista en la tabla de REPARTIDORES
+            let rep = db.repartidores.find(r => String(r.pin) === String(pin) && r.activo === 'SI');
+            if (rep) { 
+                sesionRepartidor = rep; 
+                localStorage.setItem('repartidor_GasGuainia', JSON.stringify(rep)); 
+                document.getElementById('login-screen').style.display = 'none'; 
+                document.getElementById('user-info').innerText = rep.nombre.split(' ')[0]; 
+                renderizarTodo(); 
+            } else { 
+                Swal.fire('Error', 'PIN Inválido', 'error'); 
+                document.getElementById('login-pin').value = ''; 
+            }
+        }
+
+        function cerrarSesion() { localStorage.removeItem('repartidor_GasGuainia'); location.reload(); }
+
+        // ================= RENDERS =================
+        function renderizarTodo() {
+            renderDomicilios();
+            
+            // Llenar Selects de Venta en Calle
+            let optsCli = `<option value="" disabled selected>Selecciona un cliente...</option>`; 
+            db.clientes.forEach(c => { if(c.id !== 'CLI-00') optsCli += `<option value="${c.id}|${c.nombre}|${c.telefono}">${c.nombre}</option>`; }); 
+            document.getElementById('calle-cliente').innerHTML = optsCli;
+
+            let optsProd = ''; 
+            db.productos.forEach(p => { if(p.activo==='SI') optsProd += `<option value="${p.id}|${p.nombre}|${p.precio_venta}">${p.nombre} - ${formMoneda(p.precio_venta)}</option>`; }); 
+            document.getElementById('calle-prod').innerHTML = optsProd;
+        }
+
+        // ================= TAB 1: DOMICILIOS ASIGNADOS =================
+        function renderDomicilios() {
+            let doms = db.domicilios.filter(d => d.repartidor_id === sesionRepartidor.id && d.estado === 'EN CURSO');
+            document.getElementById('contador-dom').innerText = `${doms.length} Pendientes`;
+            
+            let html = '';
+            doms.forEach(d => { 
+                // Extraer el nombre del producto del JSON para mostrarlo rápido
+                let items = JSON.parse(d.items_json || '[]');
+                let resumenPedido = items.map(i => `${i.cantidad}x ${i.producto_nombre}`).join(', ');
+
+                html += `
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-brand-500"></div>
+                    <div class="pl-2">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-black text-lg text-[#1e293b] leading-tight pr-2">${d.cliente_nombre}</h3>
+                            <a href="tel:${d.telefono}" class="bg-emerald-50 text-emerald-600 w-10 h-10 rounded-full flex items-center justify-center shrink-0 active:bg-emerald-200"><i class="fas fa-phone-alt"></i></a>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mb-2 text-sm font-bold text-slate-500">
+                            <i class="fas fa-map-marker-alt text-brand-400"></i> <span>${d.barrio} - ${d.direccion}</span>
+                        </div>
+                        
+                        <p class="text-[11px] font-black text-slate-400 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3">${d.referencia}</p>
+                        
+                        <div class="bg-brand-50 border border-brand-100 p-3 rounded-xl mb-4">
+                            <p class="text-xs font-black text-brand-700 uppercase tracking-widest mb-1">Entregar:</p>
+                            <p class="text-sm font-black text-slate-700 mb-2">${resumenPedido}</p>
+                            <div class="flex justify-between items-end border-t border-brand-200/50 pt-2">
+                                <span class="text-xs font-bold text-slate-500">Cobrar vía ${d.metodo_pago}</span>
+                                <span class="text-xl font-black text-brand-700">${formMoneda(d.total)}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="marcarEstado('${d.id}', 'ENTREGADO')" class="flex-1 bg-emerald-500 text-white font-black py-3 rounded-xl active:scale-95 transition-transform"><i class="fas fa-check mr-1"></i> ENTREGADO</button>
+                            <button onclick="marcarEstado('${d.id}', 'CANCELADO')" class="flex-1 bg-rose-100 text-rose-700 font-black py-3 rounded-xl active:scale-95 transition-transform"><i class="fas fa-times mr-1"></i> FALLIDO</button>
+                        </div>
+                    </div>
+                </div>`; 
+            });
+            document.getElementById('lista-domicilios').innerHTML = html || `
+                <div class="text-center py-20">
+                    <div class="bg-slate-200 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl text-slate-400"><i class="fas fa-check-double"></i></div>
+                    <h3 class="text-xl font-black text-slate-700 mb-1">¡Al día!</h3>
+                    <p class="text-sm font-bold text-slate-400">No tienes pedidos pendientes en cola.</p>
+                </div>`;
+        }
+
+        async function marcarEstado(id, nuevoEstado) {
+            let d = db.domicilios.find(x => x.id === id);
+            let conf = await Swal.fire({ 
+                title: `¿Confirmar como ${nuevoEstado}?`, 
+                text: nuevoEstado === 'ENTREGADO' ? 'El cliente ya recibió su cilindro.' : 'El pedido no pudo ser entregado.',
+                showCancelButton: true, confirmButtonText: 'Sí, confirmar', confirmButtonColor: nuevoEstado==='ENTREGADO'?'#10b981':'#e11d48' 
+            });
+            
+            if(conf.isConfirmed) {
+                // Modifica estrictamente el Domicilio, NO toca inventario ni caja (El POS admin lo hará al liquidar la ruta).
+                if(await enviarPOST('saveDomicilio', { data: { ...d, estado: nuevoEstado } })) {
+                    Toast.fire({ icon: 'success', title: `Marcado como ${nuevoEstado}` });
+                }
+            }
+        }
+
+        // ================= TAB 2: VENTA EN CALLE =================
+        
+        async function modalNuevoCliente() {
+            let html = `
+                <input id="nc-nom" class="swal-custom-input m-0 mb-2 p-3 text-sm" placeholder="Nombre completo">
+                <input id="nc-tel" type="tel" class="swal-custom-input m-0 mb-2 p-3 text-sm" placeholder="Celular (Para el recibo)">
+                <input id="nc-bar" class="swal-custom-input m-0 mb-2 p-3 text-sm" placeholder="Barrio">
+                <input id="nc-dir" class="swal-custom-input m-0 mb-2 p-3 text-sm" placeholder="Dirección Exacta">
+                <label class="swal-label text-center mt-2">¿En cuántos días se le acaba?</label>
+                <input id="nc-cic" type="number" class="swal-custom-input m-0 mt-1 p-3 text-xl" value="30">
+            `;
+            let res = await Swal.fire({ title: 'Nuevo Cliente', html: html, showCancelButton: true, confirmButtonText: 'Guardar', confirmButtonColor: '#0284c7', preConfirm: () => { return { nom: document.getElementById('nc-nom').value, tel: document.getElementById('nc-tel').value, bar: document.getElementById('nc-bar').value, dir: document.getElementById('nc-dir').value, cic: document.getElementById('nc-cic').value }; } });
+            
+            if(res.isConfirmed) {
+                let v = res.value;
+                if(!v.nom || !v.tel) return Swal.fire('Error', 'Nombre y celular son obligatorios', 'error');
+                let data = { id: 'CLI-' + Date.now(), nombre: v.nom, telefono: v.tel, barrio: v.bar, direccion: v.dir, referencia: 'Creado en calle', tipo: 'Hogar', ciclo_dias: v.cic, desc_100: 0, desc_40: 0, desc_30: 0, ultima_compra: '', oculto_alerta: 'NO' };
+                if(await enviarPOST('saveCliente', { data: data })) { 
+                    document.getElementById('calle-cliente').innerHTML += `<option value="${data.id}|${data.nombre}|${data.telefono}" selected>${data.nombre}</option>`; 
+                    Toast.fire({ icon: 'success', title: 'Cliente guardado' });
+                }
+            }
+        }
+
+        async function registrarVentaCalle() {
+            let cliVal = document.getElementById('calle-cliente').value;
+            let prodVal = document.getElementById('calle-prod').value;
+            let cant = document.getElementById('calle-cant').value;
+            let pago = document.getElementById('calle-pago').value;
+
+            if(!cliVal) return Swal.fire('Falta Cliente', 'Selecciona o crea un cliente para continuar.', 'warning');
+            if(!prodVal || !cant || cant <= 0) return Swal.fire('Falta Producto', 'Verifica el producto y cantidad.', 'warning');
+
+            let cl = cliVal.split('|'); // 0:id, 1:nombre, 2:telefono
+            let pr = prodVal.split('|'); // 0:id, 1:nombre, 2:precio
+            
+            let total = Number(pr[2]) * Number(cant); // En calle se cobra precio full público
+
+            let conf = await Swal.fire({
+                title: 'Confirmar Venta',
+                html: `<p class="text-sm font-bold text-slate-500 mb-2">Cobrar a ${cl[1]}</p><p class="text-3xl font-black text-brand-600 mb-4">${formMoneda(total)}</p><p class="text-xs text-slate-400">Al confirmar se le enviará el recibo por WhatsApp.</p>`,
+                showCancelButton: true, confirmButtonText: 'CONFIRMAR Y ENVIAR', confirmButtonColor: '#25D366'
+            });
+
+            if (conf.isConfirmed) {
+                // OJO LOGÍSTICA: La venta de calle NO debe sumar a la tabla de "Ventas" porque si no, cuando 
+                // el admin en el POS liquide la ruta y sume los vacíos, se facturará doble en el P&G.
+                // Solución: Lo guardamos como un Domicilio en estado 'ENTREGADO' (origen: CALLE) para que quede 
+                // el historial, el cliente actualice su ciclo, pero NO descuadre la contabilidad.
+
+                let dataDom = { 
+                    id: 'DOM-C-' + Date.now(), fecha_hora: new Date().toISOString(), 
+                    cliente_id: cl[0], cliente_nombre: cl[1], telefono: cl[2], barrio: 'Calle', direccion: 'Venta Directa Ruta', referencia: '', 
+                    items_json: JSON.stringify([{producto_id: pr[0], producto_nombre: pr[1], cantidad: cant, precio: pr[2]}]), 
+                    total: total, metodo_pago: pago, repartidor_id: sesionRepartidor.id, repartidor_nombre: sesionRepartidor.nombre, estado: 'ENTREGADO' 
+                };
+
+                if(await enviarPOST('saveDomicilio', { data: dataDom })) {
+                    // Texto empresarial para el WhatsApp desde el celular del conductor invitando a usar el número principal
+                    let msg = `*GAS GUAINÍA MAF - FACTURA DE VENTA*\n\nHola *${cl[1]}*, gracias por tu recarga.\n\n*Producto:* ${cant}x ${pr[1]}\n*Total Pagado:* ${formMoneda(total)} (${pago})\n*Atendido por:* ${sesionRepartidor.nombre.split(' ')[0]}\n\n✅ Para futuros domicilios rápidos, por favor guarda nuestra línea principal:\n*wa.me/573134701620*\n\n_¡Feliz día!_`;
+                    
+                    document.getElementById('calle-cliente').value = '';
+                    document.getElementById('calle-cant').value = '1';
+                    
+                    window.open(`https://api.whatsapp.com/send?phone=57${cl[2]}&text=${encodeURIComponent(msg)}`, '_blank');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS - Gas Guainía MAF</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Nunito', 'sans-serif'] }, colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 900: '#0c4a6e' } } } } }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            body.print-ticket #ticket-area, body.print-ticket #ticket-area * { visibility: visible; }
+            body.print-ticket #ticket-area { position: absolute; left: 0; top: 0; width: 58mm; padding: 2mm; font-family: monospace; font-size: 12px; color: black; }
+            body.print-letter #letter-area, body.print-letter #letter-area * { visibility: visible; }
+            body.print-letter #letter-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: sans-serif; color: black; }
+            .no-print { display: none !important; }
+            @page { margin: 0; }
+        }
+
+        .tab-content, .subtab-content { display: none !important; }
+        .tab-content.active, .subtab-content.active { display: block !important; animation: fade 0.3s ease; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+        .tab-btn { border-bottom: 3px solid transparent; transition: all 0.2s; color: #475569; font-weight: 700; }
+        .tab-btn.active { border-bottom: 3px solid #0284c7; color: #0284c7; font-weight: 900; background-color: #f0f9ff; }
+        
+        .subtab-btn { background: transparent; border-radius: 9999px; transition: all 0.2s; color: #64748b; font-weight: 700; padding: 0.5rem 1.5rem; }
+        .subtab-btn.active { background-color: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
+
+        .swal-custom-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem; font-weight: 700; color: #1e293b; background-color: #f8fafc; }
+        .swal-custom-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .swal-label { font-size: 0.7rem; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; text-align: left; margin-bottom: -0.25rem; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body { background-color: #f1f5f9; }
+    </style>
+</head>
+<body class="text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-black text-slate-800 mb-2">GAS GUAINÍA MAF</h2>
+            <p class="text-slate-500 mb-8 font-bold">Terminal POS</p>
+            <input type="password" id="login-pin" placeholder="PIN de Seguridad" class="w-full text-center text-3xl tracking-[0.2em] p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6 focus:border-brand-500" autocomplete="off">
+            <button onclick="iniciarSesion()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-95 text-lg">INGRESAR</button>
+        </div>
+    </div>
+
+    <!-- HEADER (Azul Naval) -->
+    <header class="bg-[#0f172a] text-white p-3 flex justify-between items-center no-print shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-fire-flame-simple text-orange-400 text-xl ml-2"></i>
+            <h1 class="text-xl font-black tracking-wide">PUNTO DE VENTA <span class="text-xs font-normal text-slate-400 ml-2" id="info-caja">Caja Cerrada</span></h1>
+        </div>
+        <div class="flex gap-3 items-center mr-2">
+            <span id="user-info" class="font-bold text-slate-300 text-sm"></span>
+            <button onclick="cerrarSesion()" class="text-rose-400 hover:text-rose-300 px-2 py-1"><i class="fas fa-power-off"></i></button>
+        </div>
+    </header>
+
+    <!-- NAVEGACIÓN -->
+    <nav class="bg-white px-4 pt-1 shadow-sm no-print flex gap-2 shrink-0 text-sm z-10 border-b border-slate-200">
+        <button class="tab-btn active px-4 py-3" onclick="openTab(event, 'tab-patio')"><i class="fas fa-store mr-2"></i> Venta Patio</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-domicilios')"><i class="fas fa-motorcycle mr-2"></i> Domicilios</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-alertas')"><i class="fas fa-bell mr-2"></i> Por Vencer</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-rutas')"><i class="fas fa-route mr-2"></i> Rutas y Liq.</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-gastos')"><i class="fas fa-receipt mr-2"></i> Gastos Caja</button>
+        <button onclick="arqueoDeCaja()" class="ml-auto bg-rose-50 text-rose-700 hover:bg-rose-100 font-black px-4 py-2 my-1.5 rounded border border-rose-200 shadow-sm active:scale-95"><i class="fas fa-cash-register mr-2"></i> Cierre Diario</button>
+    </nav>
+
+    <!-- MAIN APP AREA -->
+    <main class="flex-1 overflow-hidden relative no-print bg-[#f8fafc] w-full mx-auto">
+        
+        <!-- ================= PESTAÑA 1: VENTA PATIO ================= -->
+        <div id="tab-patio" class="tab-content active h-full flex flex-col">
+            <div class="bg-[#1e293b] p-3 flex gap-4 overflow-x-auto shrink-0" id="barra-stock-superior"></div>
+            
+            <div class="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+                <!-- Catálogo -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="bg-white rounded-t-xl p-3 border border-slate-200 border-b-0 flex items-center justify-between">
+                        <span class="font-black text-slate-700 text-sm uppercase tracking-wide">Catálogo de Productos</span>
+                        <span class="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold border border-emerald-200">Venta en Mostrador</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto bg-slate-50 p-4 border border-slate-200 rounded-b-xl">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-3" id="pos-catalogo"></div>
+                    </div>
+                </div>
+
+                <!-- Ticket -->
+                <div class="w-full lg:w-[400px] flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0">
+                    <div class="p-4 flex flex-col h-full overflow-hidden">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-black text-xs text-slate-400 uppercase tracking-widest">Ticket Activo</h3>
+                            <button onclick="limpiarCarrito()" class="text-rose-500 text-xs font-bold hover:underline">Vaciar</button>
+                        </div>
+                        <div class="shrink-0 mb-3 flex gap-2">
+                            <select id="pos-cliente" class="flex-1 p-2 border border-slate-200 rounded text-sm font-bold bg-slate-50 focus:border-brand-500 outline-none" onchange="recalcularCarrito()"></select>
+                            <button onclick="crearClienteRapido()" class="bg-brand-50 text-brand-600 border border-brand-200 px-3 rounded hover:bg-brand-100"><i class="fas fa-user-plus"></i></button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto border-t border-b border-slate-100 py-2" id="pos-carrito"></div>
+                        <div class="shrink-0 mt-3 pt-3">
+                            <div class="flex justify-between items-end mb-4">
+                                <span class="font-black text-slate-800 text-sm">SUBTOTAL TICKET:</span>
+                                <span id="pos-total-cobrar" class="font-black text-slate-900 text-3xl">$0</span>
+                            </div>
+                            <button onclick="procesarPago()" class="w-full bg-[#10b981] hover:bg-[#059669] text-white font-black py-4 rounded-lg shadow-sm transition-transform active:scale-95 text-lg">Cobrar y Facturar en Patio</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 2: DOMICILIOS ================= -->
+        <div id="tab-domicilios" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <h2 class="text-lg font-black text-[#1e3a8a]">Domicilios en Curso</h2>
+                    <button onclick="nuevoDomicilio()" class="bg-[#3b82f6] text-white px-5 py-2 rounded font-bold shadow-sm"><i class="fas fa-plus mr-2"></i> Nuevo Pedido</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="lista-domicilios"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 3: ALERTAS ================= -->
+        <div id="tab-alertas" class="tab-content h-full p-4">
+             <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 shrink-0 bg-slate-50"><h2 class="text-lg font-black text-orange-600">Control de Ciclos (Próximos a Vencer)</h2></div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <table class="w-full text-left text-sm"><tbody id="lista-alertas" class="divide-y divide-slate-100"></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 4: RUTAS Y LIQUIDACIÓN ================= -->
+        <div id="tab-rutas" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 shrink-0">
+                    <h2 class="text-xl font-black text-[#1e3a8a] mb-1">Liquidación de Rutas</h2>
+                    <p class="text-xs font-bold text-slate-500">Cargas iniciales, recambio de vacíos y arqueo por repartidor.</p>
+                </div>
+                
+                <div class="px-5 py-3 border-b border-slate-100 flex gap-2 overflow-x-auto shrink-0 bg-slate-50/50" id="rutas-tabs-nav"></div>
+                
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 relative flex items-center justify-center" id="rutas-tabs-content">
+                    <!-- Contenido renderizado por JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 5: GASTOS ================= -->
+        <div id="tab-gastos" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 w-full lg:w-1/2 mx-auto overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <h2 class="text-lg font-black text-slate-800">Vales de Caja</h2>
+                    <button onclick="registrarGastoCaja()" class="bg-rose-500 text-white px-4 py-2 rounded font-bold shadow-sm"><i class="fas fa-minus mr-2"></i> Retirar Dinero</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4"><ul id="lista-gastos-caja" class="space-y-2"></ul></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ZONAS IMPRESIÓN FÍSICA -->
+    <div id="ticket-area" class="no-print"></div>
+    <div id="letter-area" class="no-print"></div>
+
+    <!-- SCRIPTS -->
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzVebT-EsVILWNRSO_B6DlmVxdn-HrFOMJvsMmcXCcVJMOb_mVTbxLd8OQamD2Aq-ugPw/exec';
+        let db = { usuarios: [], productos: [], clientes: [], repartidores: [], gastos: [], ventas: [], domicilios: [], despachos: [] };
+        
+        let sesionActiva = JSON.parse(localStorage.getItem('sesionPOS_GasGuainia')) || null;
+        let cajaAbierta = JSON.parse(localStorage.getItem('cajaPOS_GasGuainia')) || null;
+        let carritoPOS = JSON.parse(localStorage.getItem('carritoPOS_GasGuainia')) || [];
+        let ruteroActivo = null;
+
+        const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+        const formatearFecha = () => { let d = new Date(); d.setHours(d.getHours() - 5); return d.toISOString().split('T')[0]; };
+        
+        function openTab(evt, tabName) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(tabName).classList.add('active'); evt.currentTarget.classList.add('active'); }
+        function openSubTab(repartidorId) { ruteroActivo = repartidorId; renderControlRutas(); }
+
+        window.onload = async () => { if (sesionActiva) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('user-info').innerText = sesionActiva.nombre; await syncData(); verificarCaja(); } else { await syncData(); } };
+
+        async function syncData() {
+            try { let res = await fetch(API_URL + '?action=syncAll'); let json = await res.json(); if (json.status === 'ok') { db = json; if(sesionActiva && cajaAbierta) renderizarTodo(); } } catch (err) {}
+        }
+
+        async function enviarPOST(action, payload) {
+            Swal.fire({ title: 'Procesando', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try { let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: action, ...payload }) }); let json = await res.json(); if(json.status === 'ok') { await syncData(); Swal.close(); return true; } else { Swal.fire('Error', json.message, 'warning'); return false; } } catch(e) { Swal.fire('Error', 'Fallo conexión', 'error'); return false; }
+        }
+
+        function iniciarSesion() {
+            let pin = document.getElementById('login-pin').value; if(!db.usuarios || db.usuarios.length===0) return;
+            let user = db.usuarios.find(u => String(u.pin) === String(pin) && (u.rol === 'POS' || u.rol === 'ADMIN') && u.activo === 'SI');
+            if (user) { sesionActiva = user; localStorage.setItem('sesionPOS_GasGuainia', JSON.stringify(user)); document.getElementById('login-screen').style.display = 'none'; document.getElementById('user-info').innerText = user.nombre; verificarCaja(); } else { Swal.fire('Error', 'PIN incorrecto', 'error'); }
+        }
+
+        function cerrarSesion() { if(cajaAbierta) return Swal.fire('Error', 'Realiza el Arqueo Diario antes.', 'warning'); localStorage.removeItem('sesionPOS_GasGuainia'); location.reload(); }
+
+        async function verificarCaja() {
+            if (!cajaAbierta) {
+                let { value: base } = await Swal.fire({ title: 'Apertura de Caja', html: `<label class="swal-label text-center">Efectivo Base ($)</label><input id="caja-base" type="number" class="swal-custom-input text-3xl" value="0">`, allowOutsideClick: false, confirmButtonText: 'Abrir Turno', confirmButtonColor: '#0284c7', preConfirm: () => document.getElementById('caja-base').value });
+                cajaAbierta = { fecha: formatearFecha(), base: Number(base || 0), cajero: sesionActiva.nombre }; localStorage.setItem('cajaPOS_GasGuainia', JSON.stringify(cajaAbierta));
+            }
+            document.getElementById('info-caja').innerText = `${cajaAbierta.fecha} | Base: ${formMoneda(cajaAbierta.base)}`; renderizarTodo();
+        }
+
+        // ================= RENDERS GENERALES =================
+        function renderizarTodo() {
+            let htmlTop = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => { let c = p.stock_llenos>0 ? 'text-[#10b981]':'text-rose-400'; htmlTop += `<div class="bg-[#2a364a] border border-[#334155] rounded px-4 py-2 flex flex-col items-center min-w-[120px]"><span class="text-xs text-slate-300 font-bold mb-1 truncate max-w-[110px]" title="${p.nombre}">${p.nombre.replace('Cilindro de ','').replace('Cilindro ','')}</span><span class="text-lg font-black ${c}">${p.stock_llenos} llenos</span></div>`; }); document.getElementById('barra-stock-superior').innerHTML = htmlTop;
+
+            let htmlCat = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => {
+                htmlCat += `<div class="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit mb-1">Gas GLP</span><h3 class="font-black text-slate-800 text-[13px] mb-1">${p.nombre}</h3><span class="text-xs font-bold ${p.stock_llenos>0?'text-[#10b981]':'text-slate-400'}">Stock: ${p.stock_llenos}</span></div><div class="flex flex-col items-end"><span class="font-black text-[#10b981] text-lg mb-2">${formMoneda(p.precio_venta)}</span><button onclick="agregarAlCarrito('${p.id}')" class="bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition">Añadir</button></div></div>`;
+            });
+            document.getElementById('pos-catalogo').innerHTML = htmlCat;
+
+            let opts = `<option value="CLI-00">Cliente Mostrador General (Sin Desc)</option>`; db.clientes.forEach(c => { if(c.id !== 'CLI-00') opts += `<option value="${c.id}">${c.nombre}</option>`; }); document.getElementById('pos-cliente').innerHTML = opts;
+
+            pintarCarrito(); renderAlertas(); renderGastosCaja(); renderDomicilios(); renderControlRutas();
+        }
+
+        async function crearClienteRapido() {
+            let html = `<input id="nc-nom" class="swal-custom-input text-sm p-2 m-0 mt-2" placeholder="Nombre completo"><input id="nc-tel" class="swal-custom-input text-sm p-2 m-0 mt-2" placeholder="Celular"><input id="nc-bar" class="swal-custom-input text-sm p-2 m-0 mt-2" placeholder="Barrio"><input id="nc-dir" class="swal-custom-input text-sm p-2 m-0 mt-2" placeholder="Dirección Exacta">`;
+            let { value: conf } = await Swal.fire({ title: 'Nuevo Cliente', html: html, showCancelButton: true, confirmButtonText: 'Guardar' });
+            if(conf) {
+                let data = { id: 'CLI-' + Date.now(), nombre: document.getElementById('nc-nom').value, telefono: document.getElementById('nc-tel').value, barrio: document.getElementById('nc-bar').value, direccion: document.getElementById('nc-dir').value, referencia: '', tipo: 'Hogar', ciclo_dias: 30, desc_100: 0, desc_40: 0, desc_30: 0, ultima_compra: '', oculto_alerta: 'NO' };
+                if(await enviarPOST('saveCliente', { data: data })) { document.getElementById('pos-cliente').innerHTML += `<option value="${data.id}" selected>${data.nombre}</option>`; recalcularCarrito(); }
+            }
+        }
+
+        // ================= CARRITO PATIO =================
+        function agregarAlCarrito(prodId) { let prod = db.productos.find(p => p.id === prodId); if (prod.stock_llenos <= 0) return Swal.fire('Agotado', 'Inventario 0 en Patio', 'warning'); let item = carritoPOS.find(i => i.producto_id === prodId); if (item) item.cantidad++; else carritoPOS.push({ producto_id: prod.id, producto_nombre: prod.nombre, cantidad: 1, precio_base: prod.precio_venta }); localStorage.setItem('carritoPOS_GasGuainia', JSON.stringify(carritoPOS)); pintarCarrito(); }
+        function limpiarCarrito() { carritoPOS = []; localStorage.removeItem('carritoPOS_GasGuainia'); pintarCarrito(); }
+        function recalcularCarrito() { pintarCarrito(); }
+        function quitarItem(index) { carritoPOS.splice(index, 1); localStorage.setItem('carritoPOS_GasGuainia', JSON.stringify(carritoPOS)); pintarCarrito(); }
+        
+        function pintarCarrito() {
+            let container = document.getElementById('pos-carrito'); if (carritoPOS.length === 0) { container.innerHTML = '<p class="text-center text-slate-400 text-xs mt-10 italic">No hay productos seleccionados.</p>'; document.getElementById('pos-total-cobrar').innerText = '$0'; return; }
+            let cliId = document.getElementById('pos-cliente').value; let cli = db.clientes.find(c => c.id === cliId) || db.clientes[0]; let total = 0, html = '<ul class="divide-y divide-slate-100">';
+            carritoPOS.forEach((item, index) => { let desc = 0; if(item.producto_nombre.includes('100')) desc = Number(cli.desc_100||0); if(item.producto_nombre.includes('40')) desc = Number(cli.desc_40||0); if(item.producto_nombre.includes('30')) desc = Number(cli.desc_30||0); let pFinal = item.precio_base - desc; let subt = pFinal * item.cantidad; total += subt; html += `<li class="py-2 flex justify-between items-center"><div class="flex flex-col"><span class="text-xs font-black">${item.producto_nombre} ${desc>0?'<span class="text-rose-500 font-bold">(Desc)</span>':''}</span><span class="text-xs font-bold text-slate-500">${item.cantidad} x ${formMoneda(pFinal)}</span></div><div class="flex items-center gap-2"><span class="font-black text-sm">${formMoneda(subt)}</span><button onclick="quitarItem(${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-times"></i></button></div></li>`; });
+            container.innerHTML = html + '</ul>'; document.getElementById('pos-total-cobrar').innerText = formMoneda(total);
+        }
+
+        async function procesarPago() {
+            if (carritoPOS.length === 0) return;
+            let html = `<select id="metodo-sel" class="swal-custom-input text-sm"><option value="Efectivo">Efectivo Físico</option><option value="Nequi">Nequi</option><option value="Transferencia">Transferencia Bancaria</option></select>`;
+            let { value: conf } = await Swal.fire({ title: 'COBRAR', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR Y CERRAR', confirmButtonColor: '#10b981' });
+            if (conf) {
+                let met = document.getElementById('metodo-sel').value; let t = document.getElementById('pos-total-cobrar').innerText.replace(/\D/g,''); let cliId = document.getElementById('pos-cliente').value; let cliName = document.getElementById('pos-cliente').options[document.getElementById('pos-cliente').selectedIndex].text;
+                let cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
+                let itemsFinales = carritoPOS.map(i => { let d = 0; if(i.producto_nombre.includes('100')) d = Number(cli.desc_100||0); if(i.producto_nombre.includes('40')) d = Number(cli.desc_40||0); if(i.producto_nombre.includes('30')) d = Number(cli.desc_30||0); return { ...i, precio: i.precio_base - d, cantidad: Number(i.cantidad) }; });
+                
+                // La venta en POS descuenta de inventario central.
+                let vta = { id: 'FAC-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, origen: 'POS', repartidor_id: '', repartidor_nombre: '', cliente_id: cliId, cliente_nombre: cliName, items_json: JSON.stringify(itemsFinales), subtotal: t, descuento: 0, total: t, metodo_pago: met, pago_efectivo: met==='Efectivo'?t:0, pago_nequi: met==='Nequi'?t:0, pago_transf: met==='Transferencia'?t:0, es_credito: 'NO' };
+                if(await enviarPOST('registrarVenta', { data: vta })) { imprimirTirilla(vta, itemsFinales); limpiarCarrito(); }
+            }
+        }
+
+        // ================= DOMICILIOS (SOLO INFORMATIVO) =================
+        function renderDomicilios() {
+            let html = ''; let doms = db.domicilios.filter(d => d.estado === 'EN CURSO');
+            doms.forEach(d => { html += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col"><div class="flex justify-between items-start mb-2"><h3 class="font-black text-sm text-[#1e3a8a]">${d.cliente_nombre}</h3><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">${d.repartidor_nombre.split(' ')[0]}</span></div><p class="text-xs text-slate-500 mb-2"><i class="fas fa-map-marker-alt text-slate-300"></i> ${d.barrio} - ${d.direccion}</p><p class="text-xs font-black text-slate-800 mb-3">${formMoneda(d.total)} <span class="font-normal text-slate-400">(${d.metodo_pago})</span></p><div class="flex gap-2 mt-auto"><button onclick="cambiarEstadoDom('${d.id}', 'ENTREGADO')" class="flex-1 bg-emerald-50 text-emerald-600 text-xs font-bold py-1.5 rounded hover:bg-emerald-100 border border-emerald-200"><i class="fas fa-check"></i> Entregado</button><button onclick="cambiarEstadoDom('${d.id}', 'CANCELADO')" class="flex-1 bg-rose-50 text-rose-600 text-xs font-bold py-1.5 rounded hover:bg-rose-100 border border-rose-200"><i class="fas fa-times"></i> Cancelado</button></div></div>`; });
+            document.getElementById('lista-domicilios').innerHTML = html || '<div class="col-span-full text-center text-slate-400 text-sm mt-10">No hay domicilios en curso.</div>';
+        }
+
+        async function cambiarEstadoDom(id, nuevoEstado) {
+            let d = db.domicilios.find(x => x.id === id);
+            let conf = await Swal.fire({ title: `¿Marcar como ${nuevoEstado}?`, text: 'Este pedido es informativo (la venta se factura al liquidar vacíos del repartidor al final del turno).', showCancelButton: true, confirmButtonText: 'Sí, confirmar' });
+            if(conf.isConfirmed) {
+                // Solo guardamos el domicilio para actualizar su estado. NO generamos registro de venta.
+                enviarPOST('saveDomicilio', { data: { ...d, estado: nuevoEstado } });
+            }
+        }
+
+        async function nuevoDomicilio() {
+            let optsCli = ''; db.clientes.forEach(c => { if(c.id!=='CLI-00') optsCli += `<option value="${c.id}|${c.nombre}|${c.telefono}|${c.barrio}|${c.direccion}|${c.referencia}">${c.nombre}</option>`; });
+            let optsProd = ''; db.productos.forEach(p => { if(p.activo==='SI') optsProd += `<option value="${p.id}|${p.nombre}|${p.precio_venta}">${p.nombre}</option>`; });
+            let optsRep = ''; db.repartidores.forEach(r => { if(r.activo==='SI') optsRep += `<option value="${r.id}|${r.nombre}|${r.telefono}">${r.nombre}</option>`; });
+
+            let html = `<div class="text-left"><div class="flex items-end gap-2 mb-2"><div class="flex-1"><label class="swal-label">Cliente (Destino)</label><select id="dom-cli" class="swal-custom-input p-2 m-0 text-sm">${optsCli}</select></div><button onclick="crearClienteRapido()" class="bg-brand-50 text-brand-600 border border-brand-200 p-2 rounded hover:bg-brand-100"><i class="fas fa-user-plus"></i></button></div><div class="grid grid-cols-2 gap-2 mb-2"><div><label class="swal-label">Producto</label><select id="dom-prod" class="swal-custom-input p-2 m-0 text-sm">${optsProd}</select></div><div><label class="swal-label">Cant</label><input type="number" id="dom-cant" class="swal-custom-input p-2 m-0 text-sm" value="1"></div></div><label class="swal-label">Forma de Pago Esperada</label><select id="dom-pago" class="swal-custom-input p-2 m-0 text-sm mb-4"><option>Efectivo</option><option>Nequi / Transferencia</option></select><div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg"><label class="swal-label text-indigo-800"><i class="fab fa-whatsapp"></i> Asignar Repartidor</label><select id="dom-rep" class="swal-custom-input p-2 m-0 mt-1 text-sm bg-white">${optsRep}</select></div></div>`;
+            
+            let res = await Swal.fire({ 
+                title: 'NUEVO DOMICILIO', html: html, showCancelButton: true, confirmButtonText: 'DESPACHAR', confirmButtonColor: '#3b82f6',
+                preConfirm: () => { return { cli: document.getElementById('dom-cli').value, prod: document.getElementById('dom-prod').value, rep: document.getElementById('dom-rep').value, cant: document.getElementById('dom-cant').value, pago: document.getElementById('dom-pago').value }; }
+            });
+            if(res.isConfirmed) {
+                let v = res.value; let cl = v.cli.split('|'); let pr = v.prod.split('|'); let rp = v.rep.split('|'); let cant = v.cant; let total = Number(pr[2]) * cant;
+                let data = { id: 'DOM-' + Date.now(), fecha_hora: new Date().toISOString(), cliente_id: cl[0], cliente_nombre: cl[1], telefono: cl[2], barrio: cl[3], direccion: cl[4], referencia: cl[5], items_json: JSON.stringify([{producto_id: pr[0], producto_nombre: pr[1], cantidad: cant, precio: pr[2]}]), total: total, metodo_pago: v.pago, repartidor_id: rp[0], repartidor_nombre: rp[1], estado: 'EN CURSO' };
+                if(await enviarPOST('saveDomicilio', { data: data })) { window.open(`https://api.whatsapp.com/send?phone=57${rp[2]}&text=${encodeURIComponent(`*DOMICILIO GUAINIA*\n${cant}x ${pr[1]}\nCobrar: ${formMoneda(total)}\nCliente: ${cl[1]}\nDir: ${cl[3]} ${cl[4]}`)}`, '_blank'); }
+            }
+        }
+
+        // ================= RUTAS Y LIQUIDACIÓN =================
+        function renderControlRutas() {
+            let navHtml = ''; let contentHtml = ''; let repsActivos = db.repartidores.filter(r => r.activo === 'SI');
+            
+            repsActivos.forEach((r, idx) => {
+                let isActive = ruteroActivo === r.id || (ruteroActivo === null && idx === 0); if(isActive && ruteroActivo === null) ruteroActivo = r.id;
+                navHtml += `<button class="subtab-btn ${isActive?'active':''}" onclick="openSubTab('${r.id}')">${r.nombre.split(' ')[0]}</button>`;
+            });
+            document.getElementById('rutas-tabs-nav').innerHTML = navHtml;
+
+            let repObj = db.repartidores.find(r => r.id === ruteroActivo);
+            if(!repObj) return;
+
+            // FIX: Fecha compatible
+            let desp = db.despachos.find(d => d.repartidor_id === ruteroActivo && String(d.fecha).includes(cajaAbierta.fecha) && d.estado === 'EN CURSO');
+            
+            if(!desp) {
+                contentHtml = `<div class="text-center w-full max-w-sm"><h3 class="font-black text-slate-700 text-lg mb-4">No hay ruta activa</h3><button onclick="asignarCargaInicial('${repObj.id}', '${repObj.nombre}')" class="bg-[#3b82f6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-black shadow-md w-full"><i class="fas fa-truck-loading mr-2"></i> ENTREGAR CARGA INICIAL</button></div>`;
+            } else {
+                let cIni = JSON.parse(desp.carga_inicial_json || '{}'); let cVac = JSON.parse(desp.vacios_devueltos_json || '{}');
+                contentHtml = `<div class="w-full max-w-2xl bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4"><h3 class="font-black text-[#1e3a8a]">INVENTARIO A CARGO</h3><span class="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">${repObj.nombre}</span></div><div class="grid grid-cols-3 gap-3 mb-6"><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">100 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['100']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['100']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">40 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['40']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['40']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">30 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['30']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['30']||0} Vacíos (Vend.)</p></div></div><div class="flex gap-3"><button onclick="recibirVacios('${desp.id}')" class="flex-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-black rounded-lg p-3 text-sm transition">1. RECIBIR VACÍOS Y RECARGAR</button><button onclick="liquidarRuta('${desp.id}')" class="flex-1 bg-[#3b82f6] hover:bg-blue-600 text-white font-black rounded-lg p-3 text-sm shadow-md transition">2. CERRAR RUTA Y FACTURAR</button></div></div>`;
+            }
+            document.getElementById('rutas-tabs-content').innerHTML = contentHtml;
+        }
+
+        async function asignarCargaInicial(repId, repNom) {
+            let html = `<div class="grid grid-cols-3 gap-2 mt-2"><div><label class="swal-label text-center">100 lb</label><input type="number" id="c-100" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">40 lb</label><input type="number" id="c-40" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">30 lb</label><input type="number" id="c-30" class="swal-custom-input p-2 m-0 text-xl" value="0"></div></div>`;
+            let { value: conf } = await Swal.fire({ title: 'CARGA INICIAL', html: html, showCancelButton: true, confirmButtonText: 'GUARDAR', confirmButtonColor: '#3b82f6', preConfirm: () => { return { c100: Number(document.getElementById('c-100').value||0), c40: Number(document.getElementById('c-40').value||0), c30: Number(document.getElementById('c-30').value||0) }; } });
+            
+            if(conf) {
+                let load = { "100": conf.c100, "40": conf.c40, "30": conf.c30 };
+                let data = { id: 'DSP-' + Date.now(), fecha: cajaAbierta.fecha, repartidor_id: repId, repartidor_nombre: repNom, carga_inicial_json: JSON.stringify(load), vacios_devueltos_json: JSON.stringify({"100":0,"40":0,"30":0}), estado: 'EN CURSO' };
+                // Saca Llenos de la bodega para cargarlos a la moto
+                let adj = []; let p100 = db.productos.find(p=>p.nombre.includes('100')); if(p100 && load["100"]>0) adj.push({producto_id: p100.id, delta_llenos: -load["100"], delta_vacios: 0}); let p40 = db.productos.find(p=>p.nombre.includes('40')); if(p40 && load["40"]>0) adj.push({producto_id: p40.id, delta_llenos: -load["40"], delta_vacios: 0}); let p30 = db.productos.find(p=>p.nombre.includes('30')||p.nombre.includes('33')); if(p30 && load["30"]>0) adj.push({producto_id: p30.id, delta_llenos: -load["30"], delta_vacios: 0});
+                enviarPOST('saveDespacho', { data: data, ajustarInventario: true, ajustes: adj });
+            }
+        }
+
+        async function recibirVacios(despId) {
+            let desp = db.despachos.find(d => d.id === despId); let cVac = JSON.parse(desp.vacios_devueltos_json || '{}');
+            let html = `<div class="grid grid-cols-3 gap-2 mt-2"><div><label class="swal-label text-center">100 lb</label><input type="number" id="v-100" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">40 lb</label><input type="number" id="v-40" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">30 lb</label><input type="number" id="v-30" class="swal-custom-input p-2 m-0 text-xl" value="0"></div></div>`;
+            let { value: conf } = await Swal.fire({ title: 'RECIBIR VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'SUMAR Y RECARGAR', confirmButtonColor: '#d97706', preConfirm: () => { return { v100: Number(document.getElementById('v-100').value||0), v40: Number(document.getElementById('v-40').value||0), v30: Number(document.getElementById('v-30').value||0) }; } });
+            
+            if(conf) {
+                cVac["100"] = (cVac["100"]||0) + conf.v100; cVac["40"] = (cVac["40"]||0) + conf.v40; cVac["30"] = (cVac["30"]||0) + conf.v30;
+                let data = { ...desp, vacios_devueltos_json: JSON.stringify(cVac) };
+                // Saca Llenos nuevos y devuelve Vacíos a la bodega
+                let adj = []; let p100 = db.productos.find(p=>p.nombre.includes('100')); if(p100 && conf.v100>0) adj.push({producto_id: p100.id, delta_llenos: -conf.v100, delta_vacios: conf.v100}); let p40 = db.productos.find(p=>p.nombre.includes('40')); if(p40 && conf.v40>0) adj.push({producto_id: p40.id, delta_llenos: -conf.v40, delta_vacios: conf.v40}); let p30 = db.productos.find(p=>p.nombre.includes('30')||p.nombre.includes('33')); if(p30 && conf.v30>0) adj.push({producto_id: p30.id, delta_llenos: -conf.v30, delta_vacios: conf.v30});
+                enviarPOST('saveDespacho', { data: data, ajustarInventario: true, ajustes: adj });
+            }
+        }
+
+        async function liquidarRuta(despId) {
+            let desp = db.despachos.find(d => d.id === despId); let cVac = JSON.parse(desp.vacios_devueltos_json || '{}');
+            let p100Obj = db.productos.find(p=>p.nombre.includes('100')); let p40Obj = db.productos.find(p=>p.nombre.includes('40')); let p30Obj = db.productos.find(p=>p.nombre.includes('30')||p.nombre.includes('33'));
+            let p100 = p100Obj ? p100Obj.precio_venta : 0; let p40 = p40Obj ? p40Obj.precio_venta : 0; let p30 = p30Obj ? p30Obj.precio_venta : 0;
+            let t100 = (cVac["100"]||0) * p100; let t40 = (cVac["40"]||0) * p40; let t30 = (cVac["30"]||0) * p30; let total = t100 + t40 + t30;
+
+            let html = `<div class="bg-indigo-50 p-4 rounded-lg mb-4 text-center border border-indigo-100"><p class="text-xs font-black text-indigo-500 uppercase">Facturación de Vacíos Reportados</p><p class="text-3xl font-black text-indigo-800" id="liq-tot">${formMoneda(total)}</p></div><div class="grid grid-cols-2 gap-2"><div class="text-left"><label class="swal-label">EFECTIVO FÍSICO A CAJA</label><input id="liq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#10b981]" value="${total}"></div><div class="text-left"><label class="swal-label">TRANSFERENCIA/NEQUI</label><input id="liq-tr" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#3b82f6]" value="0"></div></div>`;
+            
+            let res = await Swal.fire({ 
+                title: 'LIQUIDACIÓN FINAL', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR E IMPRIMIR', confirmButtonColor: '#3b82f6', 
+                preConfirm: () => { 
+                    let e = Number(document.getElementById('liq-ef').value); let t = Number(document.getElementById('liq-tr').value); 
+                    if(e+t !== total) { Swal.showValidationMessage('La suma debe ser exacta al Total Facturado.'); return false; } 
+                    return { ef: e, tr: t }; 
+                } 
+            });
+            
+            if(res.isConfirmed) {
+                let ef = res.value.ef; let tr = res.value.tr;
+                let dataDespacho = { ...desp, total_vendido: total, efectivo_entregado: ef, transf_entregada: tr, estado: 'LIQUIDADO' };
+                
+                // Genera la Venta oficial para que se vaya al P&G (Como el origen es RUTA, no descuenta inventario otra vez)
+                let itemsVenta = [];
+                if((cVac["100"]||0) > 0) itemsVenta.push({producto_id: p100Obj.id, producto_nombre: p100Obj.nombre, cantidad: cVac["100"], precio: p100});
+                if((cVac["40"]||0) > 0) itemsVenta.push({producto_id: p40Obj.id, producto_nombre: p40Obj.nombre, cantidad: cVac["40"], precio: p40});
+                if((cVac["30"]||0) > 0) itemsVenta.push({producto_id: p30Obj.id, producto_nombre: p30Obj.nombre, cantidad: cVac["30"], precio: p30});
+                
+                let dataVenta = { id: 'FAC-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, origen: 'RUTA', repartidor_id: desp.repartidor_id, repartidor_nombre: desp.repartidor_nombre, cliente_id: 'CLI-00', cliente_nombre: 'Ruta ' + desp.repartidor_nombre, items_json: JSON.stringify(itemsVenta), subtotal: total, descuento: 0, total: total, metodo_pago: 'Mixto', pago_efectivo: ef, pago_nequi: 0, pago_transf: tr, es_credito: 'NO' };
+                
+                if(await enviarPOST('saveDespacho', { data: dataDespacho })) {
+                    if(total > 0) await enviarPOST('registrarVenta', { data: dataVenta });
+                    let linesCarta = `<div style="text-align:center; font-family:sans-serif; margin-bottom:20px;"><h1>GAS GUAINÍA MAF</h1><p>Acta de Liquidación Diaria</p></div><p style="font-family:sans-serif;"><b>Repartidor:</b> ${desp.repartidor_nombre}<br><b>Fecha:</b> ${desp.fecha}</p><table style="width:100%; border-collapse:collapse; font-family:sans-serif; margin-bottom:20px;"><tr style="background:#eee;"><th>Ref</th><th>Vendidos (Vacíos)</th><th>Total</th></tr><tr><td>100lb</td><td style="text-align:center;">${cVac["100"]||0}</td><td style="text-align:right;">${formMoneda(t100)}</td></tr><tr><td>40lb</td><td style="text-align:center;">${cVac["40"]||0}</td><td style="text-align:right;">${formMoneda(t40)}</td></tr><tr><td>30lb</td><td style="text-align:center;">${cVac["30"]||0}</td><td style="text-align:right;">${formMoneda(t30)}</td></tr><tr><th colspan="2" style="text-align:right;">Total General:</th><th style="text-align:right;">${formMoneda(total)}</th></tr></table><p style="font-family:sans-serif;"><b>Efectivo Entregado a Caja:</b> ${formMoneda(ef)}<br><b>Bancos Reportados:</b> ${formMoneda(tr)}</p><br><br><br><div style="display:flex; justify-content:space-between; margin-top:40px; font-family:sans-serif;"><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Liquidador</div><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Repartidor</div></div>`;
+                    document.getElementById('letter-area').innerHTML = linesCarta; document.body.classList.add('print-letter'); window.print(); document.body.classList.remove('print-letter');
+                }
+            }
+        }
+
+        // ================= ALERTAS Y GASTOS =================
+        function renderAlertas() { let h=''; let hoy=new Date(); db.clientes.forEach(c => { if(c.oculto_alerta==='SI'||!c.ultima_compra)return; let dF = Number(c.ciclo_dias)-Math.floor((hoy-new Date(c.ultima_compra))/(1000*60*60*24)); if(dF<=3 && dF>=-10) h+=`<tr class="border-b"><td class="py-2 font-bold">${c.nombre}</td><td>${c.telefono}</td><td>${c.ultima_compra.split('T')[0]}</td><td class="font-bold text-orange-500">Faltan ${dF}d</td></tr>`; }); document.getElementById('lista-alertas').innerHTML = h||'<tr><td colspan="4" class="text-center py-4 text-slate-400">Sin alertas.</td></tr>'; }
+        
+        function renderGastosCaja() { let h = ''; db.gastos.filter(g => String(g.fecha).includes(cajaAbierta.fecha) && g.origen === 'POS').forEach(g => { h += `<li class="p-3 flex justify-between bg-slate-50 rounded border border-slate-100"><span class="font-bold text-sm">${g.concepto}</span><span class="text-rose-600 font-black">-${formMoneda(g.monto)}</span></li>`; }); document.getElementById('lista-gastos-caja').innerHTML = h || '<li class="p-4 text-slate-400 text-center text-sm">Sin retiros registrados.</li>'; }
+        
+        async function registrarGastoCaja() { let res = await Swal.fire({ title: 'Retiro de Caja', html: `<input id="val-con" class="swal-custom-input p-2 text-sm m-0 mt-2" placeholder="Motivo del vale"><input id="val-mon" type="number" class="swal-custom-input p-2 m-0 mt-2 text-xl text-rose-600 font-black" placeholder="Monto $">`, showCancelButton: true, confirmButtonText: 'RETIRAR', confirmButtonColor: '#f43f5e', preConfirm: () => { return { c: document.getElementById('val-con').value, m: document.getElementById('val-mon').value } } }); if(res.isConfirmed) { let c = res.value.c; let m = res.value.m; if(c&&m) enviarPOST('saveGasto', { data: { id: 'GAS-' + Date.now(), fecha: cajaAbierta.fecha, tipo_gasto: 'IMPREVISTO', origen: 'POS', concepto: c, monto: m } }); } }
+
+        // ================= ARQUEO FINAL EXACTO (CERO) =================
+        async function arqueoDeCaja() {
+            let vtasPOS = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha) && v.origen === 'POS' && v.es_credito !== 'SI');
+            let tEfPOS = 0, tNqPOS = 0, tTrPOS = 0; vtasPOS.forEach(v => { tEfPOS += Number(v.pago_efectivo); tNqPOS += Number(v.pago_nequi); tTrPOS += Number(v.pago_transf); });
+            
+            let liqRep = db.despachos.filter(d => String(d.fecha).includes(cajaAbierta.fecha) && d.estado === 'LIQUIDADO');
+            let tEfRep = 0, tTrRep = 0; liqRep.forEach(l => { tEfRep += Number(l.efectivo_entregado); tTrRep += Number(l.transf_entregada); });
+            
+            let gCaja = db.gastos.filter(g => String(g.fecha).includes(cajaAbierta.fecha) && g.origen === 'POS').reduce((a,b)=>a+Number(b.monto), 0);
+            
+            let esperadoEf = cajaAbierta.base + tEfPOS + tEfRep - gCaja; 
+            let esperadoBn = tNqPOS + tTrPOS + tTrRep;
+
+            let html = `
+                <div class="text-left bg-white p-4 rounded-xl border border-slate-200 mb-4 text-sm font-bold text-slate-500 shadow-sm">
+                    <div class="flex justify-between mb-2 border-b pb-1"><span>Base Inicial:</span><span class="text-slate-800">${formMoneda(cajaAbierta.base)}</span></div>
+                    <div class="flex justify-between mb-2 border-b pb-1"><span>Ventas Patio (Ef):</span><span class="text-[#10b981]">+${formMoneda(tEfPOS)}</span></div>
+                    <div class="flex justify-between mb-2 border-b pb-1"><span>Liq. Rep (Ef):</span><span class="text-[#10b981]">+${formMoneda(tEfRep)}</span></div>
+                    <div class="flex justify-between mb-4 border-b pb-1"><span>Vales / Retiros:</span><span class="text-rose-500">-${formMoneda(gCaja)}</span></div>
+                    
+                    <div class="border-2 border-[#10b981] rounded-lg p-3 text-center mb-2">
+                        <span class="text-[10px] text-[#10b981] font-black uppercase tracking-widest block mb-1">Efectivo Físico Esperado</span>
+                        <span class="text-2xl font-black text-slate-800">${formMoneda(esperadoEf)}</span>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-2 text-center border border-blue-100">
+                        <span class="text-[10px] text-[#3b82f6] font-black uppercase tracking-widest block mb-1">Transferencias/Nequi (Patio+Rep)</span>
+                        <span class="text-lg font-black text-[#1e3a8a]">${formMoneda(esperadoBn)}</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
+                    <p class="text-xs font-black text-[#1e3a8a] text-center mb-3">¿CUÁNTO DINERO CONTASTE HOY?</p>
+                    
+                    <label class="swal-label">Efectivo Físico en Cajón</label>
+                    <input id="arq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 mb-3 text-xl font-black text-center" value="0" onkeyup="checkArqueo(${esperadoEf}, ${esperadoBn})">
+                    <div id="res-ef" class="text-xs font-bold text-rose-500 text-center mb-4">Diferencia: ${formMoneda(-esperadoEf)}</div>
+
+                    <label class="swal-label">Total en Apps de Bancos (Nequi/Transferencias)</label>
+                    <input id="arq-bn" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-center" value="0" onkeyup="checkArqueo(${esperadoEf}, ${esperadoBn})">
+                    <div id="res-bn" class="text-xs font-bold text-rose-500 text-center mt-1">Diferencia: ${formMoneda(-esperadoBn)}</div>
+                </div>
+            `;
+
+            let res = await Swal.fire({ title: 'CIERRE Y ARQUEO', html: html, showCancelButton: true, confirmButtonText: 'CERRAR CAJA Y GUARDAR', confirmButtonColor: '#e11d48', 
+                preConfirm: () => { 
+                    let ef = Number(document.getElementById('arq-ef').value); let bn = Number(document.getElementById('arq-bn').value);
+                    if(ef !== esperadoEf || bn !== esperadoBn) { Swal.showValidationMessage(`Faltan/Sobran Efectivo: ${formMoneda(ef-esperadoEf)} | Bancos: ${formMoneda(bn-esperadoBn)}. ¡Debe dar cero!`); return false; } 
+                    return { ef: ef, bn: bn };
+                }, 
+                didOpen: () => { window.checkArqueo = (espEf, espBn) => {
+                    let e = Number(document.getElementById('arq-ef').value); let b = Number(document.getElementById('arq-bn').value);
+                    let dE = e - espEf; let dB = b - espBn;
+                    let lE = document.getElementById('res-ef'); let lB = document.getElementById('res-bn');
+                    lE.innerText = dE === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dE)}`; lE.className = dE === 0 ? 'text-xs font-bold text-[#10b981] text-center mb-4' : 'text-xs font-bold text-rose-500 text-center mb-4';
+                    lB.innerText = dB === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dB)}`; lB.className = dB === 0 ? 'text-xs font-bold text-[#10b981] text-center mt-1' : 'text-xs font-bold text-rose-500 text-center mt-1';
+                }; 
+            }});
+
+            if(res.isConfirmed) {
+                let data = { id: 'CIE-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, usuario: sesionActiva.nombre, base_inicial: cajaAbierta.base, ventas_patio_ef: tEfPOS, liq_repartidores_ef: tEfRep, abonos_cartera_ef: 0, ingresos_extra_ef: 0, gastos_caja_ef: gCaja, esperado_efectivo: esperadoEf, contado_efectivo: esperadoEf, esperado_nequi: tNqPOS, contado_nequi: tNqPOS, esperado_transf: (tTrPOS + tTrRep), contado_transf: (tTrPOS + tTrRep), diferencia_total: 0 };
+                if(await enviarPOST('saveCierreCaja', { data: data })) { localStorage.removeItem('cajaPOS_GasGuainia'); cajaAbierta = null; Swal.fire('Cerrada', `Caja cuadrada perfecta.`, 'success').then(() => location.reload()); }
+            }
+        }
+    </script>
+</body>
+</html>

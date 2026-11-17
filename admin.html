@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gas Guainía MAF</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SheetJS (Excel Export) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Estilos de Impresión */
+        @media print {
+            body * { visibility: hidden; }
+            #zona-impresion, #zona-impresion * { visibility: visible; }
+            #zona-impresion { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            @page { size: letter; margin: 1cm; }
+            .no-print { display: none !important; }
+        }
+        .tab-btn { border-bottom: 4px solid transparent; }
+        .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: bold; background-color: #eef2ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Loader Moderno */
+        #loader { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 9999; justify-content: center; align-items: center; color: white; font-size: 1.2rem; flex-direction: column; backdrop-filter: blur(4px); }
+        .spinner { border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; border-top: 4px solid #6366f1; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom SweetAlert Inputs */
+        .swal-custom-input { width: 100%; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; }
+        .swal-custom-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .swal-label { font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; display: block; text-align: left; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 z-50 flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-8 border-indigo-500">
+            <div class="bg-indigo-100 text-indigo-600 w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-4"><i class="fas fa-gas-pump"></i></div>
+            <h2 class="text-3xl font-black text-slate-800 mb-1">GAS GUAINÍA</h2>
+            <p class="text-slate-500 mb-8 font-medium">Módulo Administrativo</p>
+            <input type="password" id="login-pin" placeholder="Ingresa tu PIN" class="w-full text-center text-3xl tracking-widest p-4 bg-slate-50 border-2 border-slate-200 rounded-xl mb-6 focus:outline-none focus:border-indigo-500 transition-colors" autocomplete="off">
+            <button onclick="iniciarSesion()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 text-lg">Ingresar al Sistema</button>
+        </div>
+    </div>
+
+    <!-- Loader General -->
+    <div id="loader"><div class="spinner"></div><span id="loader-text" class="font-bold tracking-wide">Sincronizando con BD...</span></div>
+
+    <!-- Header Moderno -->
+    <header class="bg-gradient-to-r from-slate-900 to-indigo-900 text-white shadow-xl p-5 flex justify-between items-center no-print">
+        <div class="flex items-center gap-4">
+            <div class="bg-white/20 p-3 rounded-lg"><i class="fas fa-fire-flame-simple text-orange-400 text-2xl"></i></div>
+            <div>
+                <h1 class="text-2xl font-black tracking-wide">PANEL GERENCIAL</h1>
+                <p class="text-xs text-indigo-200 font-medium">Grupo Empresarial MAF - Inírida</p>
+            </div>
+        </div>
+        <div class="flex gap-4 items-center">
+            <span id="user-info" class="font-bold text-indigo-100 bg-white/10 px-4 py-2 rounded-lg"></span>
+            <button onclick="syncData()" class="bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/50 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"><i class="fas fa-sync-alt mr-2"></i> Actualizar BD</button>
+            <button onclick="cerrarSesion()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all"><i class="fas fa-power-off mr-2"></i> Salir</button>
+        </div>
+    </header>
+
+    <!-- Navegación por Pestañas -->
+    <nav class="bg-white px-4 border-b border-slate-200 shadow-sm no-print overflow-x-auto flex whitespace-nowrap gap-2">
+        <button class="tab-btn active px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-pyg')"><i class="fas fa-chart-pie mr-2"></i> P&G e Informes</button>
+        <button class="tab-btn px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-inventario')"><i class="fas fa-boxes-stacked mr-2"></i> Inventario</button>
+        <button class="tab-btn px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-clientes')"><i class="fas fa-users mr-2"></i> Clientes</button>
+        <button class="tab-btn px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-repartidores')"><i class="fas fa-motorcycle mr-2"></i> Repartidores</button>
+        <button class="tab-btn px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-gastos')"><i class="fas fa-money-bill-trend-up mr-2"></i> Gastos</button>
+        <button class="tab-btn px-6 py-4 text-slate-600 hover:text-indigo-600 transition-colors rounded-t-lg" onclick="openTab(event, 'tab-usuarios')"><i class="fas fa-user-shield mr-2"></i> Accesos</button>
+    </nav>
+
+    <!-- ZONA DE IMPRESIÓN Y CONTENIDO -->
+    <main id="zona-impresion" class="p-8">
+        
+        <!-- ================= PESTAÑA 1: P&G e INFORMES ================= -->
+        <div id="tab-pyg" class="tab-content active">
+            <div class="flex justify-between items-center mb-8 no-print bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <h2 class="text-2xl font-black text-slate-800"><i class="fas fa-file-invoice-dollar text-indigo-500 mr-2"></i> Estado de Resultados</h2>
+                <div class="flex gap-3 items-center">
+                    <span class="text-sm font-bold text-slate-500">PERIODO:</span>
+                    <input type="date" id="report-start" class="border border-slate-300 rounded-lg p-2 bg-slate-50 focus:outline-indigo-500 font-medium">
+                    <span class="text-slate-400">a</span>
+                    <input type="date" id="report-end" class="border border-slate-300 rounded-lg p-2 bg-slate-50 focus:outline-indigo-500 font-medium">
+                    <button onclick="generarInforme()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-indigo-700 font-bold"><i class="fas fa-search mr-2"></i> Generar</button>
+                    <div class="w-px h-8 bg-slate-300 mx-2"></div>
+                    <button onclick="exportarExcel()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-emerald-700 font-bold"><i class="fas fa-file-excel mr-2"></i> Excel</button>
+                    <button onclick="window.print()" class="bg-slate-800 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-slate-900 font-bold"><i class="fas fa-print mr-2"></i> Imprimir</button>
+                </div>
+            </div>
+
+            <!-- Tarjetas P&G -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-b-4 border-emerald-500 relative overflow-hidden">
+                    <i class="fas fa-wallet absolute -right-4 -bottom-4 text-6xl text-emerald-50 opacity-50"></i>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Ingresos Brutos (Ventas)</p>
+                    <h3 class="text-3xl font-black text-emerald-600" id="ind-ventas">$0</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-b-4 border-rose-500 relative overflow-hidden">
+                    <i class="fas fa-boxes absolute -right-4 -bottom-4 text-6xl text-rose-50 opacity-50"></i>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Costo Mercancía (CMV)</p>
+                    <h3 class="text-3xl font-black text-rose-600" id="ind-cmv">$0</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-b-4 border-orange-500 relative overflow-hidden">
+                    <i class="fas fa-receipt absolute -right-4 -bottom-4 text-6xl text-orange-50 opacity-50"></i>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Gastos (Fij + Imp)</p>
+                    <h3 class="text-3xl font-black text-orange-600" id="ind-gastos">$0</h3>
+                </div>
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl shadow-lg border-b-4 border-blue-400 relative overflow-hidden text-white">
+                    <i class="fas fa-chart-line absolute -right-4 -bottom-4 text-6xl text-white opacity-10"></i>
+                    <p class="text-xs text-blue-200 font-bold uppercase tracking-wider mb-1">Utilidad Neta Real</p>
+                    <h3 class="text-3xl font-black text-white" id="ind-utilidad">$0</h3>
+                </div>
+            </div>
+
+            <!-- Resumen de Cilindros -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-slate-100">
+                <h3 class="text-lg font-black text-slate-800 border-b-2 border-indigo-100 pb-3 mb-4"><i class="fas fa-cubes text-indigo-500 mr-2"></i> Resumen de Venta por Presentación</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-sm uppercase tracking-wider">
+                                <th class="p-3 font-bold rounded-tl-lg">Tipo de Cilindro</th>
+                                <th class="p-3 font-bold text-center">Unidades Vendidas</th>
+                                <th class="p-3 font-bold text-right rounded-tr-lg">Total Recaudado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-informe-ventas" class="divide-y divide-slate-100">
+                            <tr><td colspan="3" class="p-4 text-center text-slate-400">Selecciona fechas y presiona Generar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detalle Cronológico -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
+                <h3 class="text-lg font-black text-slate-800 border-b-2 border-indigo-100 pb-3 mb-4"><i class="fas fa-list-ol text-indigo-500 mr-2"></i> Detalle Cronológico de Ventas</h3>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-800 text-white sticky top-0">
+                            <tr>
+                                <th class="p-3 font-bold rounded-tl-lg">Fecha y Hora</th>
+                                <th class="p-3 font-bold">Cliente</th>
+                                <th class="p-3 font-bold">Origen / Repartidor</th>
+                                <th class="p-3 font-bold text-center">Pago</th>
+                                <th class="p-3 font-bold text-right rounded-tr-lg">Total Venta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-cronologica" class="divide-y divide-slate-200">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-400">Sin datos para mostrar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 2: INVENTARIO ================= -->
+        <div id="tab-inventario" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Inventario y Costos</h2>
+                    <p class="text-slate-500">Gestión de stock físico y precios al público</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="abrirModalIngreso()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg shadow hover:bg-emerald-700 font-bold"><i class="fas fa-truck-loading mr-2"></i> Ingreso Mercancía</button>
+                    <button onclick="abrirModalProducto()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 font-bold"><i class="fas fa-plus mr-2"></i> Nuevo Producto</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-800 text-white uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="p-4 font-bold">Producto / Presentación</th>
+                            <th class="p-4 font-bold text-center border-l border-slate-700">Stock Llenos</th>
+                            <th class="p-4 font-bold text-center">Stock Vacíos</th>
+                            <th class="p-4 font-bold text-right border-l border-slate-700">Costo (Base)</th>
+                            <th class="p-4 font-bold text-right">Precio Público</th>
+                            <th class="p-4 font-bold text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-productos" class="divide-y divide-slate-100 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 3: CLIENTES ================= -->
+        <div id="tab-clientes" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Directorio de Clientes</h2>
+                    <p class="text-slate-500">Configuración de ciclos y descuentos automáticos</p>
+                </div>
+                <button onclick="abrirModalCliente()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 font-bold"><i class="fas fa-user-plus mr-2"></i> Nuevo Cliente</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-800 text-white uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="p-4 font-bold">Nombre / Razón Social</th>
+                            <th class="p-4 font-bold">Contacto</th>
+                            <th class="p-4 font-bold">Ubicación</th>
+                            <th class="p-4 font-bold text-center bg-slate-900">Descuentos Especiales</th>
+                            <th class="p-4 font-bold text-center">Editar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-clientes" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 4: REPARTIDORES ================= -->
+        <div id="tab-repartidores" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Personal de Reparto</h2>
+                    <p class="text-slate-500">Gestión de rutas y accesos a la app móvil</p>
+                </div>
+                <button onclick="abrirModalRepartidor()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 font-bold"><i class="fas fa-plus mr-2"></i> Nuevo Repartidor</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6" id="lista-repartidores"></div>
+        </div>
+
+        <!-- ================= PESTAÑA 5: GASTOS ================= -->
+        <div id="tab-gastos" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Control de Gastos</h2>
+                    <p class="text-slate-500">Impacto directo en Punto de Equilibrio y Utilidad</p>
+                </div>
+                <button onclick="abrirModalGasto()" class="bg-rose-600 text-white px-5 py-2 rounded-lg shadow hover:bg-rose-700 font-bold"><i class="fas fa-file-invoice-dollar mr-2"></i> Registrar Gasto</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Fijos -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
+                    <h3 class="font-black text-lg mb-4 text-indigo-900 flex justify-between">
+                        <span><i class="fas fa-lock mr-2 text-indigo-500"></i> Fijos Mensuales</span>
+                        <span id="total-fijos" class="text-indigo-600">$0</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4 pb-2 border-b">Estos gastos definen la meta mínima del mes (Punto de equilibrio).</p>
+                    <ul id="lista-gastos-fijos" class="divide-y text-sm"></ul>
+                </div>
+                <!-- Imprevistos -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-orange-500"></div>
+                    <h3 class="font-black text-lg mb-4 text-orange-900 flex justify-between">
+                        <span><i class="fas fa-bolt mr-2 text-orange-500"></i> Imprevistos / Extras</span>
+                        <span id="total-imprev" class="text-orange-600">$0</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4 pb-2 border-b">Gastos esporádicos que restan directo de la utilidad neta.</p>
+                    <ul id="lista-gastos-imprevistos" class="divide-y text-sm"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 6: USUARIOS ================= -->
+        <div id="tab-usuarios" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Gestión de Accesos</h2>
+                    <p class="text-slate-500">Control de PIN para POS y Administrativo</p>
+                </div>
+                <button onclick="abrirModalUsuario()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-700 font-bold"><i class="fas fa-user-shield mr-2"></i> Nuevo Acceso</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden w-full md:w-2/3 border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-800 text-white uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="p-4 font-bold">Nombre / Alias</th>
+                            <th class="p-4 font-bold text-center">Rol del Sistema</th>
+                            <th class="p-4 font-bold text-center">PIN de Ingreso</th>
+                            <th class="p-4 font-bold text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-usuarios" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= SCRIPTS ================= -->
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzVebT-EsVILWNRSO_B6DlmVxdn-HrFOMJvsMmcXCcVJMOb_mVTbxLd8OQamD2Aq-ugPw/exec';
+        let db = { usuarios: [], productos: [], clientes: [], repartidores: [], gastos: [], ventas: [] };
+        let currentUser = null;
+
+        // Utilidades de Formato
+        const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+        const formFecha = (str) => { if(!str) return ''; let d = new Date(str); return d.toLocaleString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}); };
+
+        // Navegación
+        function openTab(evt, tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function showLoader(text = 'Procesando...') {
+            document.getElementById('loader-text').innerText = text;
+            document.getElementById('loader').style.display = 'flex';
+        }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        // SINCRONIZACIÓN Y LOGIN
+        async function syncData() {
+            showLoader('Descargando datos en vivo...');
+            try {
+                let res = await fetch(API_URL + '?action=syncAll');
+                let json = await res.json();
+                if(json.status === 'ok') {
+                    db = json;
+                    renderizarTodo();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Base de datos sincronizada', showConfirmButton: false, timer: 1500 });
+                } else {
+                    Swal.fire('Error de Servidor', json.message, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error de Conexión', 'Revisa tu internet o la URL de Google Script.', 'error');
+            }
+            hideLoader();
+        }
+
+        function iniciarSesion() {
+            let pin = document.getElementById('login-pin').value;
+            if(!db.usuarios || db.usuarios.length === 0) {
+                Swal.fire('Atención', 'Datos no cargados, espera 2 segundos.', 'warning');
+                return;
+            }
+            // Corrección aplicada: String estricto
+            let user = db.usuarios.find(u => String(u.pin) === String(pin) && u.rol === 'ADMIN' && u.activo === 'SI');
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('user-info').innerHTML = `<i class="fas fa-user-circle mr-2"></i>${user.nombre}`;
+                
+                // Setear mes actual por defecto para el informe
+                let date = new Date();
+                document.getElementById('report-start').value = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+                document.getElementById('report-end').value = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+                generarInforme();
+            } else {
+                Swal.fire('Acceso Denegado', 'PIN incorrecto o no tienes rol ADMIN.', 'error');
+                document.getElementById('login-pin').value = '';
+            }
+        }
+        
+        function cerrarSesion() { location.reload(); }
+
+        // PETICIÓN UNIVERSAL POST
+        async function enviarPOST(action, payload) {
+            showLoader('Guardando cambios...');
+            try {
+                let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: action, ...payload }) });
+                let json = await res.json();
+                if(json.status === 'ok') {
+                    await syncData();
+                    Swal.fire('¡Éxito!', json.message, 'success');
+                } else {
+                    Swal.fire('Error Operativo', json.message, 'error');
+                }
+            } catch(e) {
+                Swal.fire('Error de Red', 'No se pudo guardar la información.', 'error');
+            }
+            hideLoader();
+        }
+
+        // ================= FUNCIONES RENDER (Pintar en pantalla) =================
+
+        function renderizarTodo() {
+            renderProductos();
+            renderClientes();
+            renderRepartidores();
+            renderGastos();
+            renderUsuarios();
+        }
+
+        function renderProductos() {
+            let html = '';
+            db.productos.forEach(p => {
+                if(p.activo !== 'SI') return;
+                html += `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-bold text-slate-700">${p.nombre}</td>
+                    <td class="p-4 text-center font-black text-blue-600 bg-blue-50/50">${p.stock_llenos}</td>
+                    <td class="p-4 text-center text-slate-500 font-bold">${p.stock_vacios}</td>
+                    <td class="p-4 text-right font-medium text-slate-600">${formMoneda(p.costo)}</td>
+                    <td class="p-4 text-right font-black text-emerald-700 bg-emerald-50/50">${formMoneda(p.precio_venta)}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="abrirModalProducto('${p.id}')" class="bg-slate-100 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded shadow-sm transition"><i class="fas fa-pen"></i> Editar</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('lista-productos').innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay productos.</td></tr>';
+        }
+
+        function renderClientes() {
+            let html = '';
+            db.clientes.forEach(c => {
+                if(c.id === 'CLI-00') return; // Ocultar cliente mostrador general
+                html += `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-bold text-slate-700">${c.nombre} <br><span class="text-xs text-slate-400 font-normal"><i class="fas fa-sync-alt"></i> Ciclo: ${c.ciclo_dias} días</span></td>
+                    <td class="p-4 text-slate-600"><i class="fas fa-phone-alt text-xs mr-1 text-slate-400"></i>${c.telefono}</td>
+                    <td class="p-4 text-slate-600">${c.barrio}<br><span class="text-xs text-slate-400">${c.direccion}</span></td>
+                    <td class="p-4 text-center bg-slate-50">
+                        <div class="flex justify-center gap-2 text-xs font-bold">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded" title="Desc 100lb">100L: -${formMoneda(c.desc_100)}</span>
+                            <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded" title="Desc 40lb">40L: -${formMoneda(c.desc_40)}</span>
+                            <span class="bg-cyan-100 text-cyan-700 px-2 py-1 rounded" title="Desc 30lb">30L: -${formMoneda(c.desc_30)}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick="abrirModalCliente('${c.id}')" class="bg-slate-100 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded shadow-sm transition"><i class="fas fa-pen"></i></button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('lista-clientes').innerHTML = html || '<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay clientes registrados.</td></tr>';
+        }
+
+        function renderRepartidores() {
+            let html = '';
+            db.repartidores.forEach(r => {
+                if(r.activo !== 'SI') return;
+                html += `<div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden relative group">
+                    <div class="h-16 bg-gradient-to-r from-slate-800 to-indigo-900"></div>
+                    <button onclick="abrirModalRepartidor('${r.id}')" class="absolute top-3 right-3 text-white/50 hover:text-white transition transform hover:rotate-90"><i class="fas fa-cog text-xl"></i></button>
+                    <div class="px-6 pb-6 relative -mt-8 text-center">
+                        <div class="bg-white w-16 h-16 rounded-full flex items-center justify-center text-2xl text-indigo-600 shadow-md mx-auto mb-3 border-4 border-slate-50"><i class="fas fa-motorcycle"></i></div>
+                        <h3 class="font-black text-lg text-slate-800">${r.nombre}</h3>
+                        <p class="text-sm font-bold text-slate-500 bg-slate-100 rounded-full px-3 py-1 inline-block mt-2 mb-3 shadow-inner">${r.vehiculo_placa}</p>
+                        <div class="text-sm text-slate-600 mb-1"><i class="fas fa-phone text-xs mr-2 opacity-50"></i>${r.telefono}</div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400">PIN APP:</span>
+                            <span class="font-mono text-lg font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded">${r.pin}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('lista-repartidores').innerHTML = html;
+        }
+
+        function renderGastos() {
+            let htmlF = '', htmlI = '';
+            let totalF = 0, totalI = 0;
+            db.gastos.forEach(g => {
+                let li = `<li class="py-3 flex justify-between items-center group">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-700">${g.concepto}</span>
+                                <span class="text-xs text-slate-400">${g.fecha.split('T')[0]} | Ref: ${g.origen}</span>
+                            </div>
+                            <span class="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded">${formMoneda(g.monto)}</span>
+                          </li>`;
+                if(g.tipo_gasto === 'FIJO') { htmlF += li; totalF += Number(g.monto); } 
+                else { htmlI += li; totalI += Number(g.monto); }
+            });
+            document.getElementById('lista-gastos-fijos').innerHTML = htmlF || '<li class="py-4 text-center text-slate-400 italic">Sin gastos fijos</li>';
+            document.getElementById('lista-gastos-imprevistos').innerHTML = htmlI || '<li class="py-4 text-center text-slate-400 italic">Sin gastos imprevistos</li>';
+            document.getElementById('total-fijos').innerText = formMoneda(totalF);
+            document.getElementById('total-imprev').innerText = formMoneda(totalI);
+        }
+
+        function renderUsuarios() {
+            let html = '';
+            db.usuarios.forEach(u => {
+                let badgeColor = u.rol === 'ADMIN' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700';
+                html += `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-bold text-slate-700"><i class="fas fa-user-circle text-slate-400 mr-2"></i>${u.nombre}</td>
+                    <td class="p-4 text-center"><span class="${badgeColor} text-xs font-bold px-3 py-1 rounded-full tracking-wide">${u.rol}</span></td>
+                    <td class="p-4 text-center"><span class="font-mono text-lg font-black tracking-widest bg-slate-100 px-4 py-1 rounded">${u.pin}</span></td>
+                    <td class="p-4 text-center">
+                        <button onclick="abrirModalUsuario('${u.id}')" class="bg-slate-100 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded shadow-sm transition"><i class="fas fa-pen"></i></button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('lista-usuarios').innerHTML = html;
+        }
+
+        // ================= FUNCIONES DE MODALES COMPLETAS =================
+
+        // 1. Modal Producto
+        async function abrirModalProducto(id = null) {
+            let p = id ? db.productos.find(x => x.id === id) : {};
+            let html = `
+                <div class="text-left">
+                    <label class="swal-label">Nombre del Producto</label>
+                    <input id="prod-nom" class="swal-custom-input" placeholder="Ej: Cilindro 33 lb" value="${p.nombre||''}">
+                    
+                    <label class="swal-label">Capacidad (Libras)</label>
+                    <input id="prod-lib" type="number" class="swal-custom-input" placeholder="33, 40 o 100" value="${p.libras||''}">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="swal-label">Costo Mayorista ($)</label>
+                            <input id="prod-cst" type="number" class="swal-custom-input" value="${p.costo||''}">
+                        </div>
+                        <div>
+                            <label class="swal-label">Precio Público ($)</label>
+                            <input id="prod-pvp" type="number" class="swal-custom-input" value="${p.precio_venta||''}">
+                        </div>
+                    </div>
+                </div>
+            `;
+            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Producto' : 'Crear Producto', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'Guardar' });
+            
+            if(formValues) {
+                let data = {
+                    id: id || 'PROD-' + Date.now(),
+                    nombre: document.getElementById('prod-nom').value,
+                    libras: document.getElementById('prod-lib').value,
+                    costo: document.getElementById('prod-cst').value,
+                    precio_venta: document.getElementById('prod-pvp').value,
+                    stock_llenos: p.stock_llenos || 0,
+                    stock_vacios: p.stock_vacios || 0,
+                    activo: p.activo || 'SI'
+                };
+                if(!data.nombre || !data.precio_venta) return Swal.fire('Faltan datos', '', 'error');
+                enviarPOST('saveProducto', { data: data });
+            }
+        }
+
+        // 2. Modal Cliente (CON ETIQUETAS DE DESCUENTO CLARAS)
+        async function abrirModalCliente(id = null) {
+            let c = id ? db.clientes.find(x => x.id === id) : {};
+            let html = `
+                <div class="text-left text-sm">
+                    <label class="swal-label">Nombre / Razón Social</label>
+                    <input id="cli-nom" class="swal-custom-input" value="${c.nombre||''}">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="swal-label">Teléfono</label><input id="cli-tel" class="swal-custom-input" value="${c.telefono||''}"></div>
+                        <div><label class="swal-label">Barrio</label><input id="cli-bar" class="swal-custom-input" value="${c.barrio||''}"></div>
+                    </div>
+                    
+                    <label class="swal-label">Dirección Exacta</label>
+                    <input id="cli-dir" class="swal-custom-input" value="${c.direccion||''}">
+                    
+                    <label class="swal-label">Punto de Referencia (Opcional)</label>
+                    <input id="cli-ref" class="swal-custom-input" value="${c.referencia||''}">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="swal-label">Tipo</label>
+                            <select id="cli-tipo" class="swal-custom-input">
+                                <option value="Hogar" ${c.tipo=='Hogar'?'selected':''}>Hogar</option>
+                                <option value="Negocio" ${c.tipo=='Negocio'?'selected':''}>Negocio</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="swal-label">Ciclo (Días)</label>
+                            <input id="cli-cic" type="number" class="swal-custom-input" value="${c.ciclo_dias||30}">
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-2 border border-indigo-100">
+                        <label class="swal-label text-indigo-800 mb-2"><i class="fas fa-tags"></i> Descuentos Especiales ($ Automáticos)</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div><label class="text-xs font-bold text-slate-500">En 100 Lb</label><input id="d100" type="number" class="w-full p-2 border rounded font-mono text-center" value="${c.desc_100||0}"></div>
+                            <div><label class="text-xs font-bold text-slate-500">En 40 Lb</label><input id="d40" type="number" class="w-full p-2 border rounded font-mono text-center" value="${c.desc_40||0}"></div>
+                            <div><label class="text-xs font-bold text-slate-500">En 30 Lb</label><input id="d30" type="number" class="w-full p-2 border rounded font-mono text-center" value="${c.desc_30||0}"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Cliente' : 'Nuevo Cliente', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'Guardar', width: '600px' });
+            if(formValues) {
+                let data = {
+                    id: id || 'CLI-' + Date.now(),
+                    nombre: document.getElementById('cli-nom').value, telefono: document.getElementById('cli-tel').value,
+                    barrio: document.getElementById('cli-bar').value, direccion: document.getElementById('cli-dir').value,
+                    referencia: document.getElementById('cli-ref').value, tipo: document.getElementById('cli-tipo').value,
+                    ciclo_dias: document.getElementById('cli-cic').value, desc_100: document.getElementById('d100').value,
+                    desc_40: document.getElementById('d40').value, desc_30: document.getElementById('d30').value,
+                    ultima_compra: c.ultima_compra || '', oculto_alerta: c.oculto_alerta || 'NO'
+                };
+                enviarPOST('saveCliente', { data: data });
+            }
+        }
+
+        // 3. Modal Repartidor
+        async function abrirModalRepartidor(id = null) {
+            let r = id ? db.repartidores.find(x => x.id === id) : {};
+            let html = `
+                <div class="text-left">
+                    <label class="swal-label">Nombre del Repartidor</label>
+                    <input id="rep-nom" class="swal-custom-input" value="${r.nombre||''}">
+                    
+                    <label class="swal-label">Vehículo / Placa</label>
+                    <input id="rep-veh" class="swal-custom-input" placeholder="Ej: Moto 1 - ABC12D" value="${r.vehiculo_placa||''}">
+                    
+                    <label class="swal-label">Número de Celular</label>
+                    <input id="rep-tel" class="swal-custom-input" value="${r.telefono||''}">
+                    
+                    <label class="swal-label text-indigo-700">PIN de Acceso a App (4 Dígitos)</label>
+                    <input id="rep-pin" type="number" class="swal-custom-input font-mono tracking-widest text-center text-xl font-bold" value="${r.pin||''}">
+                </div>
+            `;
+            let { value: formValues } = await Swal.fire({ title: id ? 'Configurar Repartidor' : 'Nuevo Repartidor', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5' });
+            if(formValues) {
+                let data = {
+                    id: id || 'REP-' + Date.now(),
+                    nombre: document.getElementById('rep-nom').value, vehiculo_placa: document.getElementById('rep-veh').value,
+                    telefono: document.getElementById('rep-tel').value, pin: document.getElementById('rep-pin').value,
+                    activo: r.activo || 'SI'
+                };
+                enviarPOST('saveRepartidor', { data: data });
+            }
+        }
+
+        // 4. Modal Gasto
+        async function abrirModalGasto() {
+            let date = new Date().toISOString().split('T')[0];
+            let html = `
+                <div class="text-left">
+                    <label class="swal-label">Fecha del Gasto</label>
+                    <input id="gas-fec" type="date" class="swal-custom-input" value="${date}">
+                    
+                    <label class="swal-label">Tipo de Gasto</label>
+                    <select id="gas-tip" class="swal-custom-input">
+                        <option value="FIJO">Gasto Fijo (Nómina, Arriendo, Luz, etc)</option>
+                        <option value="IMPREVISTO">Gasto Imprevisto / Extraordinario</option>
+                    </select>
+                    
+                    <label class="swal-label">Concepto / Motivo</label>
+                    <input id="gas-con" class="swal-custom-input" placeholder="Ej: Pago publicidad radial">
+                    
+                    <label class="swal-label text-rose-700">Monto del Gasto ($)</label>
+                    <input id="gas-mon" type="number" class="swal-custom-input text-xl font-bold" placeholder="0">
+                </div>
+            `;
+            let { value: formValues } = await Swal.fire({ title: 'Registrar Gasto', html: html, showCancelButton: true, confirmButtonColor: '#e11d48' });
+            if(formValues) {
+                let data = {
+                    id: 'GAS-' + Date.now(),
+                    fecha: document.getElementById('gas-fec').value, tipo_gasto: document.getElementById('gas-tip').value,
+                    origen: 'ADMIN', concepto: document.getElementById('gas-con').value, monto: document.getElementById('gas-mon').value
+                };
+                if(!data.concepto || !data.monto) return Swal.fire('Error', 'Concepto y Monto son obligatorios', 'error');
+                enviarPOST('saveGasto', { data: data });
+            }
+        }
+
+        // 5. Modal Usuario / Acceso
+        async function abrirModalUsuario(id = null) {
+            let u = id ? db.usuarios.find(x => x.id === id) : {};
+            let html = `
+                <div class="text-left">
+                    <label class="swal-label">Nombre del Empleado/Responsable</label>
+                    <input id="usr-nom" class="swal-custom-input" value="${u.nombre||''}">
+                    
+                    <label class="swal-label">Usuario / Alias</label>
+                    <input id="usr-usr" class="swal-custom-input" value="${u.usuario||''}">
+                    
+                    <label class="swal-label">Rol del Sistema</label>
+                    <select id="usr-rol" class="swal-custom-input">
+                        <option value="ADMIN" ${u.rol=='ADMIN'?'selected':''}>Administrador (Panel Gerencial)</option>
+                        <option value="POS" ${u.rol=='POS'?'selected':''}>Cajero POS (Ventas Patio)</option>
+                    </select>
+                    
+                    <label class="swal-label text-indigo-700">PIN Secreto (4 Dígitos)</label>
+                    <input id="usr-pin" type="number" class="swal-custom-input font-mono tracking-widest text-center text-xl font-bold" value="${u.pin||''}">
+                </div>
+            `;
+            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Acceso' : 'Nuevo Usuario', html: html, showCancelButton: true, confirmButtonColor: '#4f46e5' });
+            if(formValues) {
+                let data = {
+                    id: id || 'USR-' + Date.now(),
+                    nombre: document.getElementById('usr-nom').value, usuario: document.getElementById('usr-usr').value,
+                    pin: document.getElementById('usr-pin').value, rol: document.getElementById('usr-rol').value,
+                    activo: u.activo || 'SI'
+                };
+                enviarPOST('saveUsuario', { data: data });
+            }
+        }
+
+        // 6. Modal Ingreso Mercancía
+        async function abrirModalIngreso() {
+            let options = db.productos.filter(p=>p.activo==='SI').map(p => `<option value="${p.id}|${p.nombre}|${p.costo}">${p.nombre}</option>`).join('');
+            let html = `
+                <div class="text-left text-sm mb-4 text-emerald-700 bg-emerald-50 p-3 rounded font-bold border border-emerald-200">
+                    <i class="fas fa-info-circle"></i> Al registrar la llegada, los cilindros se sumarán a la columna de LLENOS inmediatamente.
+                </div>
+                <div class="text-left">
+                    <label class="swal-label">Seleccionar Producto</label>
+                    <select id="ing-prod" class="swal-custom-input">${options}</select>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="swal-label">Cantidad a Sumar</label>
+                            <input id="ing-cant" type="number" class="swal-custom-input text-xl font-bold text-center" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="swal-label">Costo Unitario ($)</label>
+                            <input id="ing-costo" type="number" class="swal-custom-input text-center" placeholder="(Opcional)">
+                        </div>
+                    </div>
+                </div>
+            `;
+            let { value: val } = await Swal.fire({ title: 'Ingreso de Mercancía Fluvial', html: html, showCancelButton: true, confirmButtonColor: '#059669', confirmButtonText: 'Registrar Ingreso' });
+            if(val) {
+                let sel = document.getElementById('ing-prod').value.split('|');
+                let cst = document.getElementById('ing-costo').value || sel[2];
+                let cant = document.getElementById('ing-cant').value;
+                if(!cant || cant <= 0) return Swal.fire('Error', 'Debes ingresar una cantidad válida', 'error');
+                let item = { producto_id: sel[0], producto_nombre: sel[1], cantidad: cant, costo_unitario: cst };
+                enviarPOST('ingresoMercanciaMultiple', { items: [item], observacion: 'Ingreso Manual Admin' });
+            }
+        }
+
+        // ================= INFORME Y EXCEL MEJORADOS =================
+
+        let datosParaExcel = []; // Guardará la matriz para armar el Excel
+
+        function generarInforme() {
+            let start = document.getElementById('report-start').value;
+            let end = document.getElementById('report-end').value;
+            if(!start || !end) return Swal.fire('Atención', 'Selecciona el rango de fechas', 'warning');
+            
+            // Filtro de ventas y gastos (las fechas del backend llegan como string ISO o 'yyyy-mm-dd')
+            let vtas = db.ventas.filter(v => v.fecha >= start && v.fecha <= end);
+            let gs = db.gastos.filter(g => g.fecha >= start && g.fecha <= end);
+
+            let tVentas = 0, tCMV = 0;
+            let qty30 = 0, total30 = 0, qty40 = 0, total40 = 0, qty100 = 0, total100 = 0;
+
+            let htmlCronologia = '';
+            
+            // Preparar Matriz para Excel
+            datosParaExcel = [
+                ["INFORME GERENCIAL - GAS GUAINÍA MAF"],
+                ["Periodo:", start, "hasta", end],
+                [],
+                ["RESUMEN DE VENTAS POR PRESENTACIÓN"],
+                ["Tipo de Cilindro", "Unidades Vendidas", "Total Recaudado"]
+            ];
+
+            vtas.sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora)).forEach(v => {
+                tVentas += Number(v.total || 0);
+                
+                let payStr = v.metodo_pago;
+                if(v.metodo_pago === 'Mixto') payStr = `Mixto (Ef: ${v.pago_efectivo}, Nq: ${v.pago_nequi}, Tr: ${v.pago_transf})`;
+                
+                // Llenar tabla cronológica
+                htmlCronologia += `<tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-500 text-xs">${formFecha(v.fecha_hora)}</td>
+                    <td class="p-3 font-bold text-slate-700">${v.cliente_nombre || 'Mostrador'}</td>
+                    <td class="p-3 text-slate-600">${v.origen} ${v.repartidor_nombre ? ' - ' + v.repartidor_nombre : ''}</td>
+                    <td class="p-3 text-center"><span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs">${payStr}</span></td>
+                    <td class="p-3 text-right font-bold text-emerald-700">${formMoneda(v.total)}</td>
+                </tr>`;
+
+                // Sumarizar cantidades
+                let items = JSON.parse(v.items_json || '[]');
+                items.forEach(it => {
+                    tCMV += (Number(it.cantidad) * Number(it.costo || 0));
+                    if(it.producto_nombre.includes('30') || it.producto_nombre.includes('33')) { qty30 += Number(it.cantidad); total30 += (Number(it.cantidad)*Number(it.precio)); }
+                    if(it.producto_nombre.includes('40')) { qty40 += Number(it.cantidad); total40 += (Number(it.cantidad)*Number(it.precio)); }
+                    if(it.producto_nombre.includes('100')) { qty100 += Number(it.cantidad); total100 += (Number(it.cantidad)*Number(it.precio)); }
+                });
+            });
+
+            let tFijos = gs.filter(g=>g.tipo_gasto==='FIJO').reduce((a,b)=>a+Number(b.monto),0);
+            let tImprev = gs.filter(g=>g.tipo_gasto==='IMPREVISTO').reduce((a,b)=>a+Number(b.monto),0);
+            let tGastos = tFijos + tImprev;
+            let uNeta = tVentas - tCMV - tGastos;
+
+            // Actualizar Tarjetas
+            document.getElementById('ind-ventas').innerText = formMoneda(tVentas);
+            document.getElementById('ind-cmv').innerText = formMoneda(tCMV);
+            document.getElementById('ind-gastos').innerText = formMoneda(tGastos);
+            let lblUtil = document.getElementById('ind-utilidad');
+            lblUtil.innerText = formMoneda(uNeta);
+            lblUtil.className = uNeta >= 0 ? "text-3xl font-black text-white" : "text-3xl font-black text-rose-300";
+
+            // Actualizar Tabla Resumen
+            let hRes = `
+                <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 33/30 lb</td><td class="p-3 text-center font-black">${qty30}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total30)}</td></tr>
+                <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 40 lb</td><td class="p-3 text-center font-black">${qty40}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total40)}</td></tr>
+                <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 100 lb</td><td class="p-3 text-center font-black">${qty100}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total100)}</td></tr>
+                <tr class="bg-indigo-50 border-t-2 border-indigo-200"><td class="p-4 font-black text-indigo-900">TOTALES PERIODO</td><td class="p-4 text-center font-black text-indigo-900 text-lg">${qty30+qty40+qty100} UND</td><td class="p-4 text-right font-black text-indigo-900 text-lg">${formMoneda(tVentas)}</td></tr>
+            `;
+            document.getElementById('lista-informe-ventas').innerHTML = hRes;
+            
+            // Actualizar Tabla Cronológica
+            document.getElementById('lista-cronologica').innerHTML = htmlCronologia || '<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay ventas registradas en este periodo.</td></tr>';
+
+            // Completar Matriz Excel
+            datosParaExcel.push(["Cilindro 33/30 lb", qty30, total30]);
+            datosParaExcel.push(["Cilindro 40 lb", qty40, total40]);
+            datosParaExcel.push(["Cilindro 100 lb", qty100, total100]);
+            datosParaExcel.push(["TOTALES", qty30+qty40+qty100, tVentas]);
+            datosParaExcel.push([]);
+            datosParaExcel.push(["ESTADO DE RESULTADOS (P&G)"]);
+            datosParaExcel.push(["(+) Ingresos por Ventas:", "", tVentas]);
+            datosParaExcel.push(["(-) Costo Mercancía Vendida (CMV):", "", tCMV]);
+            datosParaExcel.push(["(-) Total Gastos Fijos e Imprevistos:", "", tGastos]);
+            datosParaExcel.push(["(=) UTILIDAD NETA REAL:", "", uNeta]);
+            datosParaExcel.push([]);
+            datosParaExcel.push(["DETALLE CRONOLÓGICO DE VENTAS"]);
+            datosParaExcel.push(["Fecha", "Hora", "Cliente", "Origen / Repartidor", "Metodo Pago", "Total Facturado"]);
+            vtas.forEach(v => {
+                let fecha = v.fecha_hora ? v.fecha_hora.split('T')[0] : v.fecha;
+                let hora = v.fecha_hora ? v.fecha_hora.split('T')[1].split('.')[0] : '';
+                datosParaExcel.push([fecha, hora, v.cliente_nombre, v.origen + (v.repartidor_nombre?' - '+v.repartidor_nombre:''), v.metodo_pago, Number(v.total)]);
+            });
+        }
+
+        function exportarExcel() {
+            if(datosParaExcel.length === 0) return Swal.fire('Error', 'Primero debes generar el informe para exportarlo.', 'error');
+            
+            // Usamos Array of Arrays para tener control total del diseño del Excel
+            let ws = XLSX.utils.aoa_to_sheet(datosParaExcel);
+            // Ajustar ancho de columnas
+            ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 35}, {wch: 25}, {wch: 15}, {wch: 20}];
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Informe_Gerencial");
+            XLSX.writeFile(wb, "Informe_GasGuainia_MAF.xlsx");
+        }
+
+        // Init
+        syncData();
+    </script>
+</body>
+</html>

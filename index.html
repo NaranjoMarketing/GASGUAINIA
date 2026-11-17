@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Guainía - ¡Pide tu gas a domicilio!</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: { brand: { blue: '#1e3a8a', green: '#16a34a', orange: '#f97316' } }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> html { scroll-behavior: smooth; } </style>
+</head>
+<body class="text-slate-800 font-sans flex flex-col min-h-screen bg-slate-50">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="bg-white/90 backdrop-blur-md shadow-sm fixed w-full z-50 top-0 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-fire-flame-simple text-brand-orange text-3xl"></i>
+                <div class="flex flex-col leading-none">
+                    <span class="text-2xl font-black text-brand-blue tracking-tight">GAS GUAINÍA</span>
+                    <span class="text-[10px] font-bold text-brand-green uppercase tracking-widest">Tu gas a tiempo y seguro</span>
+                </div>
+            </div>
+            <a href="https://wa.me/573134701620?text=Hola%20Gas%20Guain%C3%ADa,%20deseo%20pedir%20un%20cilindro%20a%20domicilio." target="_blank" class="bg-[#25D366] hover:bg-[#128C7E] text-white px-5 py-2.5 rounded-full font-bold shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+                <i class="fab fa-whatsapp text-xl"></i> <span class="hidden md:inline">313 470 1620</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- SECCIÓN HERO (Fondo de Guainía + Imagen Hogar) -->
+    <header class="relative pt-32 pb-20 px-4 overflow-hidden border-b-8 border-brand-green">
+        <!-- Fondo de Naturaleza (Enlace 1: Gabriel-Perez) -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://i.postimg.cc/7LqwfMST/Gabriel-Perez-Guainia-pequena-jpg.webp" class="w-full h-full object-cover opacity-70" alt="Naturaleza Guainía">
+            <div class="absolute inset-0 bg-white/85 backdrop-blur-[3px]"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-10">
+            <div class="flex-1 text-center md:text-left">
+                <span class="bg-brand-orange text-white px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest mb-6 inline-block shadow-sm"><i class="fas fa-map-marker-alt mr-1"></i> Servicio en Inírida</span>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-black text-brand-blue mb-6 leading-tight tracking-tighter">
+                    MÁS RENDIMIENTO <br> <span class="text-brand-orange">PARA TU HOGAR</span>
+                </h1>
+                <p class="text-lg md:text-xl text-slate-700 font-bold mb-8 max-w-xl">
+                    Llevamos la mejor energía a la puerta de tu casa o negocio con rapidez y seguridad. Haz tu pedido por WhatsApp y recíbelo al instante.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                    <a href="https://wa.me/573134701620?text=Hola%20Gas%20Guain%C3%ADa,%20necesito%20un%20domicilio." target="_blank" class="bg-brand-blue hover:bg-blue-900 text-white font-black text-lg px-8 py-4 rounded-2xl shadow-xl transition-transform hover:-translate-y-1 flex items-center justify-center gap-3">
+                        <i class="fas fa-motorcycle text-2xl"></i> Pedir Domicilio
+                    </a>
+                    <a href="#precios" class="bg-white hover:bg-slate-50 text-brand-blue border-2 border-brand-blue font-black text-lg px-8 py-4 rounded-2xl shadow-md transition-colors flex items-center justify-center gap-3">
+                        <i class="fas fa-tags"></i> Ver Precios
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Imagen Hero (Enlace 3: Gas Hogar) -->
+            <div class="flex-1 w-full max-w-lg hidden md:block">
+                <img src="https://i.postimg.cc/FHV1WKxM/Gas-hogar.jpg" alt="Gas para tu hogar" class="rounded-[2rem] shadow-2xl border-4 border-white transform rotate-2 hover:rotate-0 transition-transform duration-500 w-full object-cover">
+            </div>
+        </div>
+    </header>
+
+    <!-- SECCIÓN PRECIOS -->
+    <main id="precios" class="py-20 px-4 max-w-7xl mx-auto w-full">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl md:text-4xl font-black text-brand-blue mb-3">Nuestras Presentaciones</h2>
+            <p class="text-slate-500 font-bold">Selecciona el tamaño ideal para tu necesidad.</p>
+        </div>
+
+        <!-- Banner Visual Precios (Enlace 5: Gas Precios) -->
+        <div class="w-full max-w-4xl mx-auto mb-16 hidden md:block">
+            <img src="https://i.postimg.cc/SxhJf9W0/gas-precios.jpg" alt="Precios Gas Guainía" class="w-full h-auto rounded-[2rem] shadow-xl border-4 border-white object-cover">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Cilindro 30 lb -->
+            <div class="bg-white rounded-3xl p-8 shadow-lg border border-slate-100 flex flex-col items-center text-center transform transition duration-300 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-2 bg-brand-green"></div>
+                <div class="w-20 h-20 bg-emerald-50 text-brand-green rounded-full flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-home"></i></div>
+                <h3 class="text-2xl font-black text-slate-800">30 Libras</h3>
+                <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Uso Hogar</p>
+                <p class="text-4xl font-black text-brand-green mb-8">$145.000</p>
+                <a href="https://wa.me/573134701620?text=Hola,%20deseo%20pedir%20un%20cilindro%20de%2030%20libras." target="_blank" class="w-full bg-brand-green hover:bg-green-700 text-white font-black py-3 rounded-xl shadow-md transition-colors mt-auto"><i class="fab fa-whatsapp mr-1"></i> Pedir este</a>
+            </div>
+
+            <!-- Cilindro 40 lb -->
+            <div class="bg-white rounded-3xl p-8 shadow-2xl border-2 border-brand-orange flex flex-col items-center text-center transform transition duration-300 hover:-translate-y-2 relative overflow-hidden group scale-105 z-10">
+                <div class="absolute top-0 left-0 w-full h-3 bg-brand-orange"></div>
+                <div class="absolute -right-6 -top-6 bg-brand-orange text-white text-xs font-black uppercase tracking-widest px-8 py-2 rotate-45 mt-8 shadow-md">Más Rendimiento</div>
+                <div class="w-24 h-24 bg-orange-50 text-brand-orange rounded-full flex items-center justify-center text-5xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-fire"></i></div>
+                <h3 class="text-2xl font-black text-slate-800">40 Libras</h3>
+                <p class="text-sm font-bold text-brand-orange uppercase tracking-widest mb-6">Uso Familiar</p>
+                <p class="text-5xl font-black text-brand-blue mb-8">$156.000</p>
+                <a href="https://wa.me/573134701620?text=Hola,%20deseo%20pedir%20un%20cilindro%20de%2040%20libras." target="_blank" class="w-full bg-brand-orange hover:bg-orange-600 text-white font-black py-4 rounded-xl shadow-lg transition-colors mt-auto text-lg"><i class="fab fa-whatsapp mr-1"></i> Pedir este</a>
+            </div>
+
+            <!-- Cilindro 100 lb -->
+            <div class="bg-white rounded-3xl p-8 shadow-lg border border-slate-100 flex flex-col items-center text-center transform transition duration-300 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-2 bg-brand-blue"></div>
+                <div class="w-20 h-20 bg-blue-50 text-brand-blue rounded-full flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-industry"></i></div>
+                <h3 class="text-2xl font-black text-slate-800">100 Libras</h3>
+                <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Uso Comercial</p>
+                <p class="text-4xl font-black text-brand-blue mb-8">$350.000</p>
+                <a href="https://wa.me/573134701620?text=Hola,%20deseo%20pedir%20un%20cilindro%20comercial%20de%20100%20libras." target="_blank" class="w-full bg-brand-blue hover:bg-blue-900 text-white font-black py-3 rounded-xl shadow-md transition-colors mt-auto"><i class="fab fa-whatsapp mr-1"></i> Pedir este</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- SECCIÓN NEGOCIO -->
+    <section class="bg-white py-16 border-t border-slate-100">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col-reverse md:flex-row items-center gap-12">
+            <!-- Imagen Negocio (Enlace 4: Gas Negocio) -->
+            <div class="flex-1 w-full relative">
+                <div class="absolute inset-0 bg-brand-blue translate-x-3 translate-y-3 rounded-3xl"></div>
+                <img src="https://i.postimg.cc/Qd3HJ7cz/gas-negocio.jpg" alt="Gas para tu negocio" class="rounded-3xl shadow-xl w-full relative z-10 border-4 border-white object-cover">
+            </div>
+            <div class="flex-1">
+                <h2 class="text-3xl md:text-4xl font-black text-brand-blue mb-4">Gas para tu Negocio</h2>
+                <p class="text-lg text-slate-600 font-bold mb-6">La presentación de 100 Lbs es ideal para restaurantes, panaderías y cocinas industriales. Garantizamos abastecimiento continuo para que tu negocio nunca se detenga.</p>
+                <a href="https://wa.me/573134701620?text=Hola,%20tengo%20un%20negocio%20y%20necesito%20cilindros%20de%20100%20libras." target="_blank" class="inline-block bg-brand-blue hover:bg-blue-900 text-white font-black px-6 py-3 rounded-xl shadow-md transition-transform hover:-translate-y-1">
+                    Cotizar para negocio <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN DE BODEGA E INFORMACIÓN -->
+    <section class="bg-brand-blue py-16 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center gap-12 relative z-10">
+            
+            <div class="flex-1 text-white">
+                <span class="text-brand-orange font-black tracking-widest uppercase text-sm mb-2 block">Punto Físico</span>
+                <h2 class="text-3xl md:text-5xl font-black mb-6">¡Visita Nuestra Bodega en Inírida!</h2>
+                <ul class="space-y-6">
+                    <li class="flex items-start gap-4">
+                        <div class="bg-white/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-brand-orange text-xl"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <h4 class="font-bold text-xl mb-1">Dirección:</h4>
+                            <p class="text-slate-300 font-semibold text-lg">Km 1, Vía Aeropuerto <br> Piedra de Caño Ramón</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <div class="bg-white/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-brand-orange text-xl"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <h4 class="font-bold text-xl mb-1">Horario:</h4>
+                            <p class="text-slate-300 font-semibold text-lg">Lun a Sáb: 7am - 12pm y 2pm - 5pm</p>
+                        </div>
+                    </li>
+                </ul>
+                <div class="mt-8 pt-8 border-t border-white/20">
+                    <p class="text-sm font-bold uppercase tracking-widest text-brand-green mb-3">Línea Directa / Domicilios</p>
+                    <a href="https://wa.me/573134701620?text=Hola,%20deseo%20m%C3%A1s%20informaci%C3%B3n." target="_blank" class="inline-block bg-[#25D366] hover:bg-[#128C7E] text-white text-3xl md:text-4xl font-black px-8 py-4 rounded-2xl shadow-xl transition-transform hover:scale-105 mb-2">
+                        <i class="fab fa-whatsapp mr-2"></i> 313 470 1620
+                    </a>
+                </div>
+            </div>
+
+            <!-- Imagen Bodega/Domicilio (Enlace 2: Gas Domicilio) -->
+            <div class="w-full md:w-1/2">
+                <img src="https://i.postimg.cc/gkRxhsLB/gas-domicilio.jpg" alt="Bodega Inírida" class="rounded-[2rem] shadow-2xl border-4 border-white/20 object-cover w-full">
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0f172a] text-slate-400 py-8 text-center mt-auto">
+        <div class="flex items-center justify-center gap-2 mb-4 opacity-50">
+            <i class="fas fa-fire-flame-simple text-xl"></i>
+            <span class="font-black text-xl tracking-widest text-white">GAS GUAINÍA</span>
+        </div>
+        <p class="text-sm font-bold">&copy; 2026 Grupo Empresarial MAF - Todos los derechos reservados.</p>
+        <p class="text-xs mt-2">Distribuidor Oficial Inírida, Guainía - Colombia</p>
+    </footer>
+
+</body>
+</html>
