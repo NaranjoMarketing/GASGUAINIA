@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <!-- HEADER (Azul Naval) -->
+    <!-- HEADER -->
     <header class="bg-[#0f172a] text-white p-3 flex justify-between items-center no-print shrink-0 z-20">
         <div class="flex items-center gap-3">
             <i class="fas fa-fire-flame-simple text-orange-400 text-xl ml-2"></i>
@@ -71,8 +71,10 @@
     </header>
 
     <!-- NAVEGACIÓN -->
-    <nav class="bg-white px-4 pt-1 shadow-sm no-print flex gap-2 shrink-0 text-sm z-10 border-b border-slate-200">
+    <nav class="bg-white px-4 pt-1 shadow-sm no-print flex gap-2 shrink-0 text-sm z-10 border-b border-slate-200 overflow-x-auto">
         <button class="tab-btn active px-4 py-3" onclick="openTab(event, 'tab-patio')"><i class="fas fa-store mr-2"></i> Venta Patio</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-historial')"><i class="fas fa-history mr-2"></i> Historial Facturas</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-estadisticas')"><i class="fas fa-chart-bar mr-2"></i> Estadísticas</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-domicilios')"><i class="fas fa-motorcycle mr-2"></i> Domicilios</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-alertas')"><i class="fas fa-bell mr-2"></i> Por Vencer</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-rutas')"><i class="fas fa-route mr-2"></i> Rutas y Liq.</button>
@@ -83,12 +85,11 @@
     <!-- MAIN APP AREA -->
     <main class="flex-1 overflow-hidden relative no-print bg-[#f8fafc] w-full mx-auto">
         
-        <!-- ================= PESTAÑA 1: VENTA PATIO ================= -->
+        <!-- PESTAÑA 1: VENTA PATIO -->
         <div id="tab-patio" class="tab-content active h-full flex flex-col">
             <div class="bg-[#1e293b] p-3 flex gap-4 overflow-x-auto shrink-0" id="barra-stock-superior"></div>
             
             <div class="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
-                <!-- Catálogo -->
                 <div class="flex-1 flex flex-col overflow-hidden">
                     <div class="bg-white rounded-t-xl p-3 border border-slate-200 border-b-0 flex items-center justify-between">
                         <span class="font-black text-slate-700 text-sm uppercase tracking-wide">Catálogo de Productos</span>
@@ -99,7 +100,6 @@
                     </div>
                 </div>
 
-                <!-- Ticket -->
                 <div class="w-full lg:w-[400px] flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0">
                     <div class="p-4 flex flex-col h-full overflow-hidden">
                         <div class="flex justify-between items-center mb-3">
@@ -123,7 +123,32 @@
             </div>
         </div>
 
-        <!-- ================= PESTAÑA 2: DOMICILIOS ================= -->
+        <!-- PESTAÑA NUEVA: HISTORIAL DE FACTURAS -->
+        <div id="tab-historial" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <h2 class="text-lg font-black text-[#1e3a8a]">Historial de Ventas (Turno Actual)</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3 rounded-tl-lg">Hora</th><th class="p-3">Factura</th><th class="p-3">Cliente</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3 text-center rounded-tr-lg">Acción</th></tr></thead>
+                        <tbody id="lista-historial-facturas" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA NUEVA: ESTADÍSTICAS -->
+        <div id="tab-estadisticas" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-slate-50 shrink-0">
+                    <h2 class="text-lg font-black text-[#1e3a8a]">Cilindros Vendidos (Hoy vs. Siempre)</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50" id="lista-estadisticas"></div>
+            </div>
+        </div>
+
+        <!-- DOMICILIOS -->
         <div id="tab-domicilios" class="tab-content h-full p-4">
             <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
@@ -136,7 +161,7 @@
             </div>
         </div>
 
-        <!-- ================= PESTAÑA 3: ALERTAS ================= -->
+        <!-- ALERTAS -->
         <div id="tab-alertas" class="tab-content h-full p-4">
              <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-100 shrink-0 bg-slate-50"><h2 class="text-lg font-black text-orange-600">Control de Ciclos (Próximos a Vencer)</h2></div>
@@ -146,23 +171,19 @@
             </div>
         </div>
 
-        <!-- ================= PESTAÑA 4: RUTAS Y LIQUIDACIÓN ================= -->
+        <!-- RUTAS Y LIQUIDACIÓN -->
         <div id="tab-rutas" class="tab-content h-full p-4">
             <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-100 shrink-0">
                     <h2 class="text-xl font-black text-[#1e3a8a] mb-1">Liquidación de Rutas</h2>
                     <p class="text-xs font-bold text-slate-500">Cargas iniciales, recambio de vacíos y arqueo por repartidor.</p>
                 </div>
-                
                 <div class="px-5 py-3 border-b border-slate-100 flex gap-2 overflow-x-auto shrink-0 bg-slate-50/50" id="rutas-tabs-nav"></div>
-                
-                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 relative flex items-center justify-center" id="rutas-tabs-content">
-                    <!-- Contenido renderizado por JS -->
-                </div>
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50 relative flex items-center justify-center" id="rutas-tabs-content"></div>
             </div>
         </div>
 
-        <!-- ================= PESTAÑA 5: GASTOS ================= -->
+        <!-- GASTOS -->
         <div id="tab-gastos" class="tab-content h-full p-4">
             <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 w-full lg:w-1/2 mx-auto overflow-hidden">
                 <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
@@ -189,8 +210,14 @@
         let ruteroActivo = null;
 
         const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
-        const formatearFecha = () => { let d = new Date(); d.setHours(d.getHours() - 5); return d.toISOString().split('T')[0]; };
-        
+        const formatearFecha = (shift = 0) => { 
+            let d = new Date(); 
+            d.setDate(d.getDate() + shift); // Para abrir el turno siguiente si se necesita
+            d.setHours(d.getHours() - 5); 
+            return d.toISOString().split('T')[0]; 
+        };
+        const formatHora = (isoStr) => { if(!isoStr)return''; let d = new Date(isoStr); return d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}); };
+
         function openTab(evt, tabName) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(tabName).classList.add('active'); evt.currentTarget.classList.add('active'); }
         function openSubTab(repartidorId) { ruteroActivo = repartidorId; renderControlRutas(); }
 
@@ -215,24 +242,25 @@
 
         async function verificarCaja() {
             if (!cajaAbierta) {
-                let { value: base } = await Swal.fire({ title: 'Apertura de Caja', html: `<label class="swal-label text-center">Efectivo Base ($)</label><input id="caja-base" type="number" class="swal-custom-input text-3xl" value="0">`, allowOutsideClick: false, confirmButtonText: 'Abrir Turno', confirmButtonColor: '#0284c7', preConfirm: () => document.getElementById('caja-base').value });
-                cajaAbierta = { fecha: formatearFecha(), base: Number(base || 0), cajero: sesionActiva.nombre }; localStorage.setItem('cajaPOS_GasGuainia', JSON.stringify(cajaAbierta));
+                // MODIFICACIÓN QUIRÚRGICA 5: Apertura con opción de fecha.
+                let html = `<label class="swal-label text-center">Efectivo Base Físico ($)</label><input id="caja-base" type="number" class="swal-custom-input text-3xl" value="0"><label class="swal-label text-center mt-4">Fecha del Turno</label><select id="caja-fecha" class="swal-custom-input text-sm p-3"><option value="0">Turno de Hoy (${formatearFecha(0)})</option><option value="1">Turno de Mañana (${formatearFecha(1)})</option></select>`;
+                let { value: conf } = await Swal.fire({ title: 'Apertura de Caja', html: html, allowOutsideClick: false, confirmButtonText: 'Abrir Turno', confirmButtonColor: '#0284c7', preConfirm: () => { return { b: document.getElementById('caja-base').value, f: document.getElementById('caja-fecha').value }; } });
+                cajaAbierta = { fecha: formatearFecha(Number(conf.f)), base: Number(conf.b || 0), cajero: sesionActiva.nombre }; localStorage.setItem('cajaPOS_GasGuainia', JSON.stringify(cajaAbierta));
             }
             document.getElementById('info-caja').innerText = `${cajaAbierta.fecha} | Base: ${formMoneda(cajaAbierta.base)}`; renderizarTodo();
         }
 
-        // ================= RENDERS GENERALES =================
         function renderizarTodo() {
             let htmlTop = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => { let c = p.stock_llenos>0 ? 'text-[#10b981]':'text-rose-400'; htmlTop += `<div class="bg-[#2a364a] border border-[#334155] rounded px-4 py-2 flex flex-col items-center min-w-[120px]"><span class="text-xs text-slate-300 font-bold mb-1 truncate max-w-[110px]" title="${p.nombre}">${p.nombre.replace('Cilindro de ','').replace('Cilindro ','')}</span><span class="text-lg font-black ${c}">${p.stock_llenos} llenos</span></div>`; }); document.getElementById('barra-stock-superior').innerHTML = htmlTop;
 
             let htmlCat = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => {
-                htmlCat += `<div class="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit mb-1">Gas GLP</span><h3 class="font-black text-slate-800 text-[13px] mb-1">${p.nombre}</h3><span class="text-xs font-bold ${p.stock_llenos>0?'text-[#10b981]':'text-slate-400'}">Stock: ${p.stock_llenos}</span></div><div class="flex flex-col items-end"><span class="font-black text-[#10b981] text-lg mb-2">${formMoneda(p.precio_venta)}</span><button onclick="agregarAlCarrito('${p.id}')" class="bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition">Añadir</button></div></div>`;
+                htmlCat += `<div class="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit mb-1">Gas GLP</span><h3 class="font-black text-slate-800 text-[13px] mb-1">${p.nombre}</h3><span class="text-xs font-bold ${p.stock_llenos>0?'text-[#10b981]':'text-slate-400'}">Stock Patio: ${p.stock_llenos}</span></div><div class="flex flex-col items-end"><span class="font-black text-[#10b981] text-lg mb-2">${formMoneda(p.precio_venta)}</span><button onclick="agregarAlCarrito('${p.id}')" class="bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition">Añadir</button></div></div>`;
             });
             document.getElementById('pos-catalogo').innerHTML = htmlCat;
 
             let opts = `<option value="CLI-00">Cliente Mostrador General (Sin Desc)</option>`; db.clientes.forEach(c => { if(c.id !== 'CLI-00') opts += `<option value="${c.id}">${c.nombre}</option>`; }); document.getElementById('pos-cliente').innerHTML = opts;
 
-            pintarCarrito(); renderAlertas(); renderGastosCaja(); renderDomicilios(); renderControlRutas();
+            pintarCarrito(); renderHistorial(); renderEstadisticas(); renderAlertas(); renderGastosCaja(); renderDomicilios(); renderControlRutas();
         }
 
         async function crearClienteRapido() {
@@ -244,7 +272,6 @@
             }
         }
 
-        // ================= CARRITO PATIO =================
         function agregarAlCarrito(prodId) { let prod = db.productos.find(p => p.id === prodId); if (prod.stock_llenos <= 0) return Swal.fire('Agotado', 'Inventario 0 en Patio', 'warning'); let item = carritoPOS.find(i => i.producto_id === prodId); if (item) item.cantidad++; else carritoPOS.push({ producto_id: prod.id, producto_nombre: prod.nombre, cantidad: 1, precio_base: prod.precio_venta }); localStorage.setItem('carritoPOS_GasGuainia', JSON.stringify(carritoPOS)); pintarCarrito(); }
         function limpiarCarrito() { carritoPOS = []; localStorage.removeItem('carritoPOS_GasGuainia'); pintarCarrito(); }
         function recalcularCarrito() { pintarCarrito(); }
@@ -257,6 +284,7 @@
             container.innerHTML = html + '</ul>'; document.getElementById('pos-total-cobrar').innerText = formMoneda(total);
         }
 
+        // MODIFICACIÓN QUIRÚRGICA 4: Auto-limpieza de ticket tras cobro
         async function procesarPago() {
             if (carritoPOS.length === 0) return;
             let html = `<select id="metodo-sel" class="swal-custom-input text-sm"><option value="Efectivo">Efectivo Físico</option><option value="Nequi">Nequi</option><option value="Transferencia">Transferencia Bancaria</option></select>`;
@@ -266,13 +294,72 @@
                 let cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
                 let itemsFinales = carritoPOS.map(i => { let d = 0; if(i.producto_nombre.includes('100')) d = Number(cli.desc_100||0); if(i.producto_nombre.includes('40')) d = Number(cli.desc_40||0); if(i.producto_nombre.includes('30')) d = Number(cli.desc_30||0); return { ...i, precio: i.precio_base - d, cantidad: Number(i.cantidad) }; });
                 
-                // La venta en POS descuenta de inventario central.
                 let vta = { id: 'FAC-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, origen: 'POS', repartidor_id: '', repartidor_nombre: '', cliente_id: cliId, cliente_nombre: cliName, items_json: JSON.stringify(itemsFinales), subtotal: t, descuento: 0, total: t, metodo_pago: met, pago_efectivo: met==='Efectivo'?t:0, pago_nequi: met==='Nequi'?t:0, pago_transf: met==='Transferencia'?t:0, es_credito: 'NO' };
-                if(await enviarPOST('registrarVenta', { data: vta })) { imprimirTirilla(vta, itemsFinales); limpiarCarrito(); }
+                if(await enviarPOST('registrarVenta', { data: vta })) { 
+                    imprimirTirilla(vta, itemsFinales); 
+                    limpiarCarrito(); 
+                    document.getElementById('pos-cliente').value = 'CLI-00'; // Resetea el cliente al por defecto
+                }
             }
         }
 
-        // ================= DOMICILIOS (SOLO INFORMATIVO) =================
+        // ================= MODIFICACIÓN QUIRÚRGICA 1: HISTORIAL DE VENTAS =================
+        function renderHistorial() {
+            let vtas = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha)).sort((a,b)=> new Date(b.fecha_hora) - new Date(a.fecha_hora));
+            let h = '';
+            vtas.forEach(v => {
+                let cl = db.clientes.find(c => c.id === v.cliente_id);
+                let tel = cl ? cl.telefono : '';
+                h += `<tr class="border-b hover:bg-slate-50"><td class="p-3 text-slate-500 font-bold">${formatHora(v.fecha_hora)}</td><td class="p-3 text-xs font-black text-[#1e3a8a]">${v.id.split('-')[1]}</td><td class="p-3 font-bold">${v.cliente_nombre.substring(0,15)}</td><td class="p-3 font-black">${formMoneda(v.total)}</td><td class="p-3 text-[10px] uppercase font-bold">${v.metodo_pago}</td><td class="p-3 text-center flex gap-1"><button onclick="reimprimirFactura('${v.id}')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs"><i class="fas fa-print"></i></button><button onclick="enviarWhatsApp('${tel}', '${v.id}')" class="bg-[#25D366] hover:bg-[#128C7E] text-white px-2 py-1 rounded text-xs"><i class="fab fa-whatsapp"></i></button></td></tr>`;
+            });
+            document.getElementById('lista-historial-facturas').innerHTML = h || '<tr><td colspan="6" class="p-5 text-center text-slate-400 font-bold">No hay facturas en este turno.</td></tr>';
+        }
+
+        function reimprimirFactura(idFac) {
+            let vta = db.ventas.find(v => v.id === idFac);
+            if(vta) { let items = JSON.parse(vta.items_json||'[]'); imprimirTirilla(vta, items); }
+        }
+
+        function enviarWhatsApp(tel, idFac) {
+            if(!tel || tel.length < 10) return Swal.fire('Error', 'El cliente no tiene celular guardado.', 'error');
+            let vta = db.ventas.find(v => v.id === idFac);
+            let msg = `*GAS GUAINÍA MAF*\nRecibo de compra: ${idFac.split('-')[1]}\nFecha: ${vta.fecha_hora.split('T')[0]}\n\n*Total Pagado:* ${formMoneda(vta.total)}\nMétodo: ${vta.metodo_pago}\n\n_¡Gracias por tu compra!_`;
+            window.open(`https://api.whatsapp.com/send?phone=57${tel}&text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // ================= MODIFICACIÓN QUIRÚRGICA 2: ESTADÍSTICAS =================
+        function renderEstadisticas() {
+            let vtasHoy = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha));
+            let vtasTotal = db.ventas;
+            
+            let qH100 = 0, qH40 = 0, qH30 = 0, tHoy = 0;
+            vtasHoy.forEach(v => { tHoy += Number(v.total); JSON.parse(v.items_json||'[]').forEach(i => { if(i.producto_nombre.includes('100')) qH100+=Number(i.cantidad); if(i.producto_nombre.includes('40')) qH40+=Number(i.cantidad); if(i.producto_nombre.includes('30')) qH30+=Number(i.cantidad); }); });
+            
+            let qT100 = 0, qT40 = 0, qT30 = 0, tTot = 0;
+            vtasTotal.forEach(v => { tTot += Number(v.total); JSON.parse(v.items_json||'[]').forEach(i => { if(i.producto_nombre.includes('100')) qT100+=Number(i.cantidad); if(i.producto_nombre.includes('40')) qT40+=Number(i.cantidad); if(i.producto_nombre.includes('30')) qT30+=Number(i.cantidad); }); });
+
+            let html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-emerald-200">
+                        <h3 class="font-black text-emerald-700 border-b pb-2 mb-3"><i class="fas fa-calendar-day mr-2"></i> HOY (${cajaAbierta.fecha})</h3>
+                        <div class="flex justify-between font-bold text-sm mb-1"><span>100 Lb:</span><span>${qH100} Unds</span></div>
+                        <div class="flex justify-between font-bold text-sm mb-1"><span>40 Lb:</span><span>${qH40} Unds</span></div>
+                        <div class="flex justify-between font-bold text-sm mb-3"><span>30 Lb:</span><span>${qH30} Unds</span></div>
+                        <div class="bg-emerald-50 text-emerald-800 p-2 rounded text-center font-black">RECAUDO: ${formMoneda(tHoy)}</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-200">
+                        <h3 class="font-black text-blue-700 border-b pb-2 mb-3"><i class="fas fa-globe mr-2"></i> HISTÓRICO TOTAL</h3>
+                        <div class="flex justify-between font-bold text-sm mb-1"><span>100 Lb:</span><span>${qT100} Unds</span></div>
+                        <div class="flex justify-between font-bold text-sm mb-1"><span>40 Lb:</span><span>${qT40} Unds</span></div>
+                        <div class="flex justify-between font-bold text-sm mb-3"><span>30 Lb:</span><span>${qT30} Unds</span></div>
+                        <div class="bg-blue-50 text-blue-800 p-2 rounded text-center font-black">RECAUDO: ${formMoneda(tTot)}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('lista-estadisticas').innerHTML = html;
+        }
+
+        // ================= DOMICILIOS =================
         function renderDomicilios() {
             let html = ''; let doms = db.domicilios.filter(d => d.estado === 'EN CURSO');
             doms.forEach(d => { html += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col"><div class="flex justify-between items-start mb-2"><h3 class="font-black text-sm text-[#1e3a8a]">${d.cliente_nombre}</h3><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">${d.repartidor_nombre.split(' ')[0]}</span></div><p class="text-xs text-slate-500 mb-2"><i class="fas fa-map-marker-alt text-slate-300"></i> ${d.barrio} - ${d.direccion}</p><p class="text-xs font-black text-slate-800 mb-3">${formMoneda(d.total)} <span class="font-normal text-slate-400">(${d.metodo_pago})</span></p><div class="flex gap-2 mt-auto"><button onclick="cambiarEstadoDom('${d.id}', 'ENTREGADO')" class="flex-1 bg-emerald-50 text-emerald-600 text-xs font-bold py-1.5 rounded hover:bg-emerald-100 border border-emerald-200"><i class="fas fa-check"></i> Entregado</button><button onclick="cambiarEstadoDom('${d.id}', 'CANCELADO')" class="flex-1 bg-rose-50 text-rose-600 text-xs font-bold py-1.5 rounded hover:bg-rose-100 border border-rose-200"><i class="fas fa-times"></i> Cancelado</button></div></div>`; });
@@ -282,10 +369,7 @@
         async function cambiarEstadoDom(id, nuevoEstado) {
             let d = db.domicilios.find(x => x.id === id);
             let conf = await Swal.fire({ title: `¿Marcar como ${nuevoEstado}?`, text: 'Este pedido es informativo (la venta se factura al liquidar vacíos del repartidor al final del turno).', showCancelButton: true, confirmButtonText: 'Sí, confirmar' });
-            if(conf.isConfirmed) {
-                // Solo guardamos el domicilio para actualizar su estado. NO generamos registro de venta.
-                enviarPOST('saveDomicilio', { data: { ...d, estado: nuevoEstado } });
-            }
+            if(conf.isConfirmed) { enviarPOST('saveDomicilio', { data: { ...d, estado: nuevoEstado } }); }
         }
 
         async function nuevoDomicilio() {
@@ -295,10 +379,7 @@
 
             let html = `<div class="text-left"><div class="flex items-end gap-2 mb-2"><div class="flex-1"><label class="swal-label">Cliente (Destino)</label><select id="dom-cli" class="swal-custom-input p-2 m-0 text-sm">${optsCli}</select></div><button onclick="crearClienteRapido()" class="bg-brand-50 text-brand-600 border border-brand-200 p-2 rounded hover:bg-brand-100"><i class="fas fa-user-plus"></i></button></div><div class="grid grid-cols-2 gap-2 mb-2"><div><label class="swal-label">Producto</label><select id="dom-prod" class="swal-custom-input p-2 m-0 text-sm">${optsProd}</select></div><div><label class="swal-label">Cant</label><input type="number" id="dom-cant" class="swal-custom-input p-2 m-0 text-sm" value="1"></div></div><label class="swal-label">Forma de Pago Esperada</label><select id="dom-pago" class="swal-custom-input p-2 m-0 text-sm mb-4"><option>Efectivo</option><option>Nequi / Transferencia</option></select><div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg"><label class="swal-label text-indigo-800"><i class="fab fa-whatsapp"></i> Asignar Repartidor</label><select id="dom-rep" class="swal-custom-input p-2 m-0 mt-1 text-sm bg-white">${optsRep}</select></div></div>`;
             
-            let res = await Swal.fire({ 
-                title: 'NUEVO DOMICILIO', html: html, showCancelButton: true, confirmButtonText: 'DESPACHAR', confirmButtonColor: '#3b82f6',
-                preConfirm: () => { return { cli: document.getElementById('dom-cli').value, prod: document.getElementById('dom-prod').value, rep: document.getElementById('dom-rep').value, cant: document.getElementById('dom-cant').value, pago: document.getElementById('dom-pago').value }; }
-            });
+            let res = await Swal.fire({ title: 'NUEVO DOMICILIO', html: html, showCancelButton: true, confirmButtonText: 'DESPACHAR', confirmButtonColor: '#3b82f6', preConfirm: () => { return { cli: document.getElementById('dom-cli').value, prod: document.getElementById('dom-prod').value, rep: document.getElementById('dom-rep').value, cant: document.getElementById('dom-cant').value, pago: document.getElementById('dom-pago').value }; } });
             if(res.isConfirmed) {
                 let v = res.value; let cl = v.cli.split('|'); let pr = v.prod.split('|'); let rp = v.rep.split('|'); let cant = v.cant; let total = Number(pr[2]) * cant;
                 let data = { id: 'DOM-' + Date.now(), fecha_hora: new Date().toISOString(), cliente_id: cl[0], cliente_nombre: cl[1], telefono: cl[2], barrio: cl[3], direccion: cl[4], referencia: cl[5], items_json: JSON.stringify([{producto_id: pr[0], producto_nombre: pr[1], cantidad: cant, precio: pr[2]}]), total: total, metodo_pago: v.pago, repartidor_id: rp[0], repartidor_nombre: rp[1], estado: 'EN CURSO' };
@@ -319,7 +400,6 @@
             let repObj = db.repartidores.find(r => r.id === ruteroActivo);
             if(!repObj) return;
 
-            // FIX: Fecha compatible
             let desp = db.despachos.find(d => d.repartidor_id === ruteroActivo && String(d.fecha).includes(cajaAbierta.fecha) && d.estado === 'EN CURSO');
             
             if(!desp) {
@@ -338,7 +418,6 @@
             if(conf) {
                 let load = { "100": conf.c100, "40": conf.c40, "30": conf.c30 };
                 let data = { id: 'DSP-' + Date.now(), fecha: cajaAbierta.fecha, repartidor_id: repId, repartidor_nombre: repNom, carga_inicial_json: JSON.stringify(load), vacios_devueltos_json: JSON.stringify({"100":0,"40":0,"30":0}), estado: 'EN CURSO' };
-                // Saca Llenos de la bodega para cargarlos a la moto
                 let adj = []; let p100 = db.productos.find(p=>p.nombre.includes('100')); if(p100 && load["100"]>0) adj.push({producto_id: p100.id, delta_llenos: -load["100"], delta_vacios: 0}); let p40 = db.productos.find(p=>p.nombre.includes('40')); if(p40 && load["40"]>0) adj.push({producto_id: p40.id, delta_llenos: -load["40"], delta_vacios: 0}); let p30 = db.productos.find(p=>p.nombre.includes('30')||p.nombre.includes('33')); if(p30 && load["30"]>0) adj.push({producto_id: p30.id, delta_llenos: -load["30"], delta_vacios: 0});
                 enviarPOST('saveDespacho', { data: data, ajustarInventario: true, ajustes: adj });
             }
@@ -347,12 +426,11 @@
         async function recibirVacios(despId) {
             let desp = db.despachos.find(d => d.id === despId); let cVac = JSON.parse(desp.vacios_devueltos_json || '{}');
             let html = `<div class="grid grid-cols-3 gap-2 mt-2"><div><label class="swal-label text-center">100 lb</label><input type="number" id="v-100" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">40 lb</label><input type="number" id="v-40" class="swal-custom-input p-2 m-0 text-xl" value="0"></div><div><label class="swal-label text-center">30 lb</label><input type="number" id="v-30" class="swal-custom-input p-2 m-0 text-xl" value="0"></div></div>`;
-            let { value: conf } = await Swal.fire({ title: 'RECIBIR VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'SUMAR Y RECARGAR', confirmButtonColor: '#d97706', preConfirm: () => { return { v100: Number(document.getElementById('v-100').value||0), v40: Number(document.getElementById('v-40').value||0), v30: Number(document.getElementById('v-30').value||0) }; } });
+            let { value: conf } = await Swal.fire({ title: 'RECIBIR VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'SUMAR', confirmButtonColor: '#d97706', preConfirm: () => { return { v100: Number(document.getElementById('v-100').value||0), v40: Number(document.getElementById('v-40').value||0), v30: Number(document.getElementById('v-30').value||0) }; } });
             
             if(conf) {
                 cVac["100"] = (cVac["100"]||0) + conf.v100; cVac["40"] = (cVac["40"]||0) + conf.v40; cVac["30"] = (cVac["30"]||0) + conf.v30;
                 let data = { ...desp, vacios_devueltos_json: JSON.stringify(cVac) };
-                // Saca Llenos nuevos y devuelve Vacíos a la bodega
                 let adj = []; let p100 = db.productos.find(p=>p.nombre.includes('100')); if(p100 && conf.v100>0) adj.push({producto_id: p100.id, delta_llenos: -conf.v100, delta_vacios: conf.v100}); let p40 = db.productos.find(p=>p.nombre.includes('40')); if(p40 && conf.v40>0) adj.push({producto_id: p40.id, delta_llenos: -conf.v40, delta_vacios: conf.v40}); let p30 = db.productos.find(p=>p.nombre.includes('30')||p.nombre.includes('33')); if(p30 && conf.v30>0) adj.push({producto_id: p30.id, delta_llenos: -conf.v30, delta_vacios: conf.v30});
                 enviarPOST('saveDespacho', { data: data, ajustarInventario: true, ajustes: adj });
             }
@@ -364,22 +442,13 @@
             let p100 = p100Obj ? p100Obj.precio_venta : 0; let p40 = p40Obj ? p40Obj.precio_venta : 0; let p30 = p30Obj ? p30Obj.precio_venta : 0;
             let t100 = (cVac["100"]||0) * p100; let t40 = (cVac["40"]||0) * p40; let t30 = (cVac["30"]||0) * p30; let total = t100 + t40 + t30;
 
-            let html = `<div class="bg-indigo-50 p-4 rounded-lg mb-4 text-center border border-indigo-100"><p class="text-xs font-black text-indigo-500 uppercase">Facturación de Vacíos Reportados</p><p class="text-3xl font-black text-indigo-800" id="liq-tot">${formMoneda(total)}</p></div><div class="grid grid-cols-2 gap-2"><div class="text-left"><label class="swal-label">EFECTIVO FÍSICO A CAJA</label><input id="liq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#10b981]" value="${total}"></div><div class="text-left"><label class="swal-label">TRANSFERENCIA/NEQUI</label><input id="liq-tr" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#3b82f6]" value="0"></div></div>`;
+            let html = `<div class="bg-indigo-50 p-4 rounded-lg mb-4 text-center border border-indigo-100"><p class="text-xs font-black text-indigo-500 uppercase">Total Facturado</p><p class="text-3xl font-black text-indigo-800" id="liq-tot">${formMoneda(total)}</p></div><div class="grid grid-cols-2 gap-2"><div class="text-left"><label class="swal-label">EFECTIVO FÍSICO A CAJA</label><input id="liq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#10b981]" value="${total}"></div><div class="text-left"><label class="swal-label">TRANSFERENCIA/NEQUI</label><input id="liq-tr" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#3b82f6]" value="0"></div></div>`;
             
-            let res = await Swal.fire({ 
-                title: 'LIQUIDACIÓN FINAL', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR E IMPRIMIR', confirmButtonColor: '#3b82f6', 
-                preConfirm: () => { 
-                    let e = Number(document.getElementById('liq-ef').value); let t = Number(document.getElementById('liq-tr').value); 
-                    if(e+t !== total) { Swal.showValidationMessage('La suma debe ser exacta al Total Facturado.'); return false; } 
-                    return { ef: e, tr: t }; 
-                } 
-            });
+            let res = await Swal.fire({ title: 'LIQUIDACIÓN FINAL', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR E IMPRIMIR', confirmButtonColor: '#3b82f6', preConfirm: () => { let e = Number(document.getElementById('liq-ef').value); let t = Number(document.getElementById('liq-tr').value); if(e+t !== total) { Swal.showValidationMessage('La suma debe ser exacta al Total Facturado.'); return false; } return { ef: e, tr: t }; } });
             
             if(res.isConfirmed) {
                 let ef = res.value.ef; let tr = res.value.tr;
                 let dataDespacho = { ...desp, total_vendido: total, efectivo_entregado: ef, transf_entregada: tr, estado: 'LIQUIDADO' };
-                
-                // Genera la Venta oficial para que se vaya al P&G (Como el origen es RUTA, no descuenta inventario otra vez)
                 let itemsVenta = [];
                 if((cVac["100"]||0) > 0) itemsVenta.push({producto_id: p100Obj.id, producto_nombre: p100Obj.nombre, cantidad: cVac["100"], precio: p100});
                 if((cVac["40"]||0) > 0) itemsVenta.push({producto_id: p40Obj.id, producto_nombre: p40Obj.nombre, cantidad: cVac["40"], precio: p40});
@@ -402,13 +471,28 @@
         
         async function registrarGastoCaja() { let res = await Swal.fire({ title: 'Retiro de Caja', html: `<input id="val-con" class="swal-custom-input p-2 text-sm m-0 mt-2" placeholder="Motivo del vale"><input id="val-mon" type="number" class="swal-custom-input p-2 m-0 mt-2 text-xl text-rose-600 font-black" placeholder="Monto $">`, showCancelButton: true, confirmButtonText: 'RETIRAR', confirmButtonColor: '#f43f5e', preConfirm: () => { return { c: document.getElementById('val-con').value, m: document.getElementById('val-mon').value } } }); if(res.isConfirmed) { let c = res.value.c; let m = res.value.m; if(c&&m) enviarPOST('saveGasto', { data: { id: 'GAS-' + Date.now(), fecha: cajaAbierta.fecha, tipo_gasto: 'IMPREVISTO', origen: 'POS', concepto: c, monto: m } }); } }
 
-        // ================= ARQUEO FINAL EXACTO (CERO) =================
+        // ================= MODIFICACIÓN QUIRÚRGICA 3: CIERRE CON DESGLOSE E IMPRESIÓN =================
         async function arqueoDeCaja() {
             let vtasPOS = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha) && v.origen === 'POS' && v.es_credito !== 'SI');
-            let tEfPOS = 0, tNqPOS = 0, tTrPOS = 0; vtasPOS.forEach(v => { tEfPOS += Number(v.pago_efectivo); tNqPOS += Number(v.pago_nequi); tTrPOS += Number(v.pago_transf); });
+            let tEfPOS = 0, tNqPOS = 0, tTrPOS = 0; 
+            
+            // Calculamos cilindros vendidos en patio para el desglose del recibo
+            let c30P = 0, c40P = 0, c100P = 0;
+            vtasPOS.forEach(v => { 
+                tEfPOS += Number(v.pago_efectivo); tNqPOS += Number(v.pago_nequi); tTrPOS += Number(v.pago_transf); 
+                JSON.parse(v.items_json||'[]').forEach(i => { if(i.producto_nombre.includes('100')) c100P+=Number(i.cantidad); if(i.producto_nombre.includes('40')) c40P+=Number(i.cantidad); if(i.producto_nombre.includes('30')) c30P+=Number(i.cantidad); });
+            });
             
             let liqRep = db.despachos.filter(d => String(d.fecha).includes(cajaAbierta.fecha) && d.estado === 'LIQUIDADO');
-            let tEfRep = 0, tTrRep = 0; liqRep.forEach(l => { tEfRep += Number(l.efectivo_entregado); tTrRep += Number(l.transf_entregada); });
+            let tEfRep = 0, tTrRep = 0; 
+            
+            // Calculamos cilindros vendidos por repartidores
+            let c30R = 0, c40R = 0, c100R = 0;
+            liqRep.forEach(l => { 
+                tEfRep += Number(l.efectivo_entregado); tTrRep += Number(l.transf_entregada); 
+                let v = JSON.parse(l.vacios_devueltos_json||'{}');
+                c100R += Number(v['100']||0); c40R += Number(v['40']||0); c30R += Number(v['30']||0);
+            });
             
             let gCaja = db.gastos.filter(g => String(g.fecha).includes(cajaAbierta.fecha) && g.origen === 'POS').reduce((a,b)=>a+Number(b.monto), 0);
             
@@ -445,25 +529,43 @@
                 </div>
             `;
 
-            let res = await Swal.fire({ title: 'CIERRE Y ARQUEO', html: html, showCancelButton: true, confirmButtonText: 'CERRAR CAJA Y GUARDAR', confirmButtonColor: '#e11d48', 
-                preConfirm: () => { 
-                    let ef = Number(document.getElementById('arq-ef').value); let bn = Number(document.getElementById('arq-bn').value);
-                    if(ef !== esperadoEf || bn !== esperadoBn) { Swal.showValidationMessage(`Faltan/Sobran Efectivo: ${formMoneda(ef-esperadoEf)} | Bancos: ${formMoneda(bn-esperadoBn)}. ¡Debe dar cero!`); return false; } 
-                    return { ef: ef, bn: bn };
-                }, 
-                didOpen: () => { window.checkArqueo = (espEf, espBn) => {
-                    let e = Number(document.getElementById('arq-ef').value); let b = Number(document.getElementById('arq-bn').value);
-                    let dE = e - espEf; let dB = b - espBn;
-                    let lE = document.getElementById('res-ef'); let lB = document.getElementById('res-bn');
-                    lE.innerText = dE === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dE)}`; lE.className = dE === 0 ? 'text-xs font-bold text-[#10b981] text-center mb-4' : 'text-xs font-bold text-rose-500 text-center mb-4';
-                    lB.innerText = dB === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dB)}`; lB.className = dB === 0 ? 'text-xs font-bold text-[#10b981] text-center mt-1' : 'text-xs font-bold text-rose-500 text-center mt-1';
-                }; 
-            }});
+            let res = await Swal.fire({ title: 'CIERRE Y ARQUEO', html: html, showCancelButton: true, confirmButtonText: 'CERRAR E IMPRIMIR TICKER', confirmButtonColor: '#e11d48', preConfirm: () => { 
+                let ef = Number(document.getElementById('arq-ef').value); let bn = Number(document.getElementById('arq-bn').value);
+                if(ef !== esperadoEf || bn !== esperadoBn) { Swal.showValidationMessage(`Faltan/Sobran Efectivo: ${formMoneda(ef-esperadoEf)} | Bancos: ${formMoneda(bn-esperadoBn)}. ¡Debe dar cero!`); return false; } return true;
+            }, didOpen: () => { window.checkArqueo = (espEf, espBn) => {
+                let e = Number(document.getElementById('arq-ef').value); let b = Number(document.getElementById('arq-bn').value);
+                let dE = e - espEf; let dB = b - espBn;
+                let lE = document.getElementById('res-ef'); let lB = document.getElementById('res-bn');
+                lE.innerText = dE === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dE)}`; lE.className = dE === 0 ? 'text-xs font-bold text-[#10b981] text-center mb-4' : 'text-xs font-bold text-rose-500 text-center mb-4';
+                lB.innerText = dB === 0 ? 'Cuadrado ($0)' : `Diferencia: ${formMoneda(dB)}`; lB.className = dB === 0 ? 'text-xs font-bold text-[#10b981] text-center mt-1' : 'text-xs font-bold text-rose-500 text-center mt-1';
+            }; }});
 
             if(res.isConfirmed) {
                 let data = { id: 'CIE-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, usuario: sesionActiva.nombre, base_inicial: cajaAbierta.base, ventas_patio_ef: tEfPOS, liq_repartidores_ef: tEfRep, abonos_cartera_ef: 0, ingresos_extra_ef: 0, gastos_caja_ef: gCaja, esperado_efectivo: esperadoEf, contado_efectivo: esperadoEf, esperado_nequi: tNqPOS, contado_nequi: tNqPOS, esperado_transf: (tTrPOS + tTrRep), contado_transf: (tTrPOS + tTrRep), diferencia_total: 0 };
-                if(await enviarPOST('saveCierreCaja', { data: data })) { localStorage.removeItem('cajaPOS_GasGuainia'); cajaAbierta = null; Swal.fire('Cerrada', `Caja cuadrada perfecta.`, 'success').then(() => location.reload()); }
+                
+                if(await enviarPOST('saveCierreCaja', { data: data })) { 
+                    
+                    // Imprime Tirilla 58mm de Cierre (Igual que las ventas pero con resumen)
+                    let printText = `GAS GUAINIA MAF\nNit: 900.000.000\nKm 1 Via Aeropuerto\n--------------------------------\nCIERRE DIARIO DE CAJA POS\n--------------------------------\nFecha: ${cajaAbierta.fecha}\nCajero: ${sesionActiva.nombre.substring(0,10)}\n--------------------------------\nVENTAS TOTALES (Patio + Ruta)\n100 Lb: ${c100P + c100R} unds\n40 Lb: ${c40P + c40R} unds\n30 Lb: ${c30P + c30R} unds\n--------------------------------\nRESUMEN FINANCIERO\nBase Inicial: ${formMoneda(cajaAbierta.base)}\nVentas Patio Ef: ${formMoneda(tEfPOS)}\nLiq Rutas Ef: ${formMoneda(tEfRep)}\nVales de Caja: -${formMoneda(gCaja)}\n\nTOTAL CAJON: ${formMoneda(esperadoEf)}\n\nTOTAL BANCOS: ${formMoneda(esperadoBn)}\n--------------------------------\n¡Cierre Cuadrado Exitosamente!\n.`;
+                    
+                    document.getElementById('ticket-area').innerText = printText; 
+                    document.body.classList.add('print-ticket'); 
+                    window.print(); 
+                    document.body.classList.remove('print-ticket');
+                    
+                    localStorage.removeItem('cajaPOS_GasGuainia'); 
+                    cajaAbierta = null; 
+                    location.reload();
+                }
             }
+        }
+
+        // ================= FUNCIÓN IMPRESIÓN TIRILLA DE VENTA =================
+        function imprimirTirilla(venta, items) {
+            let lines = `GAS GUAINIA MAF\nNit: 900.000.000\nKm 1 Via Aeropuerto\nTel: 3134701620\n--------------------------------\nFecha: ${venta.fecha_hora.split('T')[0]}\nFactura: ${venta.id.split('-')[1]}\nCajero: ${sesionActiva.nombre.substring(0,10)}\nCliente: ${venta.cliente_nombre.substring(0,15)}\n--------------------------------\n`;
+            items.forEach(i => { lines += `${i.cantidad}x ${i.producto_nombre.substring(0,12)} $${i.precio}\n`; });
+            lines += `--------------------------------\nTOTAL: ${formMoneda(venta.total)}\nPago: ${venta.metodo_pago}\n\nGracias por su compra.\n\n\n.`;
+            document.getElementById('ticket-area').innerText = lines; document.body.classList.add('print-ticket'); window.print(); document.body.classList.remove('print-ticket');
         }
     </script>
 </body>
