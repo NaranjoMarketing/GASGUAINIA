@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informes Gerenciales - Gas Guainía MAF</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Librería nativa para generar archivos Word (.docx) reales -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f1f5f9; }
+        .tab-btn { border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn.active { border-bottom: 3px solid #1e3a8a; color: #1e3a8a; font-weight: 900; background-color: #eff6ff; }
+        .hoja-carta {
+            width: 100%;
+            max-width: 816px; /* 8.5 pulgadas a 96dpi */
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 40px 44px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12);
+            border: 1px solid #e2e8f0;
+        }
+        #loader { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 9999; justify-content: center; align-items: center; color: white; flex-direction: column; backdrop-filter: blur(4px); }
+        .spinner { border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; border-top: 4px solid #38bdf8; width: 54px; height: 54px; animation: spin 1s linear infinite; margin-bottom: 12px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-9 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-8 border-[#1e3a8a]">
+            <div class="bg-blue-50 text-[#1e3a8a] w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+                <i class="fas fa-file-word"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800">GAS GUAINÍA</h2>
+            <p class="text-slate-500 mb-6 font-bold text-sm">Módulo de Informes Word (.docx)</p>
+            <input type="password" id="login-pin" placeholder="PIN Administrador" class="w-full text-center text-3xl tracking-widest p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl mb-5 focus:outline-none focus:border-[#1e3a8a]" autocomplete="off" onkeydown="if(event.key==='Enter') iniciarSesion()">
+            <button onclick="iniciarSesion()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-black py-3.5 rounded-xl shadow-lg transition text-base">INGRESAR</button>
+        </div>
+    </div>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <span id="loader-text" class="font-bold tracking-wide text-sm">Sincronizando base de datos...</span>
+    </div>
+
+    <!-- HEADER -->
+    <header class="bg-[#0f172a] text-white px-6 py-4 flex flex-wrap justify-between items-center gap-4 shadow-md">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-fire-flame-simple text-orange-400 text-2xl"></i>
+            <div>
+                <h1 class="text-xl font-black tracking-wide leading-tight">CENTRO DE INFORMES</h1>
+                <p class="text-xs text-slate-400 font-bold">Gas Guainía • NIT 19001956-1 • Exportación Word Carta Vertical</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="user-info" class="text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg text-slate-200"></span>
+            <button onclick="syncData(true)" class="bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+                <i class="fas fa-sync-alt mr-1"></i> Actualizar BD
+            </button>
+            <button onclick="cerrarSesion()" class="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition">
+                <i class="fas fa-power-off mr-1"></i> Salir
+            </button>
+        </div>
+    </header>
+
+    <!-- BARRA DE FILTROS Y DESCARGA -->
+    <section class="bg-white border-b border-slate-200 shadow-sm px-6 py-4">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Fecha Desde</label>
+                <input type="date" id="fecha-desde" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold bg-slate-50">
+            </div>
+            <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Fecha Hasta</label>
+                <input type="date" id="fecha-hasta" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold bg-slate-50">
+            </div>
+            <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Elaborado por</label>
+                <input type="text" id="firma-elabora" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold bg-slate-50" placeholder="Nombre responsable">
+            </div>
+            <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Revisado / Aprobado</label>
+                <input type="text" id="firma-aprueba" class="w-full border border-slate-300 rounded-lg p-2 text-sm font-bold bg-slate-50" value="Miguel Ángel Forero Gaitán">
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+                <button onclick="procesarInformes()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-black py-2.5 px-4 rounded-lg text-sm shadow transition">
+                    <i class="fas fa-filter mr-1"></i> Generar Vista
+                </button>
+                <button onclick="descargarWordActivo()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-black py-2.5 px-4 rounded-lg text-sm shadow transition">
+                    <i class="fas fa-file-word mr-1"></i> Descargar Word
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SELECTOR DE INFORME -->
+    <nav class="bg-white border-b border-slate-200 px-6 flex gap-2 justify-center">
+        <button id="btn-tab-ventas" class="tab-btn active px-6 py-3 text-sm" onclick="cambiarTab('ventas')">
+            <i class="fas fa-file-invoice-dollar mr-2"></i> 1. Consolidado de Ventas y Gastos
+        </button>
+        <button id="btn-tab-bodega" class="tab-btn px-6 py-3 text-sm" onclick="cambiarTab('bodega')">
+            <i class="fas fa-boxes-stacked mr-2"></i> 2. Control e Inventario de Bodega
+        </button>
+    </nav>
+
+    <!-- VISTA PREVIA EN FORMATO CARTA VERTICAL -->
+    <main class="flex-1 p-6 overflow-y-auto">
+        <div id="preview-ventas" class="hoja-carta"></div>
+        <div id="preview-bodega" class="hoja-carta hidden"></div>
+    </main>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzVebT-EsVILWNRSO_B6DlmVxdn-HrFOMJvsMmcXCcVJMOb_mVTbxLd8OQamD2Aq-ugPw/exec';
+        let db = { usuarios: [], productos: [], movimientos: [], clientes: [], repartidores: [], gastos: [], ventas: [], creditos: [] };
+        let currentUser = null;
+        let tabActiva = 'ventas';
+        let datosVentas = null;
+        let datosBodega = null;
+
+        const EMPRESA = {
+            nombre: 'GAS GUAINÍA',
+            grupo: 'Grupo Empresarial MAF',
+            nit: 'NIT: 19001956-1',
+            direccion: 'Km 1, Vía Aeropuerto - Piedra de Caño Conejo, Inírida, Guainía',
+            telefono: 'Tel / WhatsApp: 313 470 1620'
+        };
+
+        const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(val) || 0);
+        const soloFecha = (val) => { if (!val) return ''; return String(val).trim().substring(0, 10); };
+        const hoyISO = () => { let d = new Date(); d.setHours(d.getHours() - 5); return d.toISOString().split('T')[0]; };
+
+        function showLoader(msg = 'Cargando...') {
+            document.getElementById('loader-text').innerText = msg;
+            document.getElementById('loader').style.display = 'flex';
+        }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        function cambiarTab(tab) {
+            tabActiva = tab;
+            document.getElementById('btn-tab-ventas').classList.toggle('active', tab === 'ventas');
+            document.getElementById('btn-tab-bodega').classList.toggle('active', tab === 'bodega');
+            document.getElementById('preview-ventas').classList.toggle('hidden', tab !== 'ventas');
+            document.getElementById('preview-bodega').classList.toggle('hidden', tab !== 'bodega');
+        }
+
+        async function syncData(mostrarToast = false) {
+            showLoader('Descargando datos en vivo...');
+            try {
+                let res = await fetch(API_URL + '?action=syncAll');
+                let json = await res.json();
+                if (json.status === 'ok') {
+                    db = json;
+                    if (currentUser) procesarInformes();
+                    if (mostrarToast) Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Datos actualizados', showConfirmButton: false, timer: 1500 });
+                } else {
+                    Swal.fire('Error', json.message || 'No se pudo cargar la BD', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error de conexión', 'Verifica internet o la URL del servidor.', 'error');
+            }
+            hideLoader();
+        }
+
+        function iniciarSesion() {
+            let pin = document.getElementById('login-pin').value;
+            if (!db.usuarios || db.usuarios.length === 0) return Swal.fire('Espera', 'Cargando base de datos...', 'info');
+            let user = db.usuarios.find(u => String(u.pin) === String(pin) && u.rol === 'ADMIN' && u.activo === 'SI');
+            if (!user) {
+                document.getElementById('login-pin').value = '';
+                return Swal.fire('Acceso denegado', 'PIN incorrecto o sin permisos ADMIN.', 'error');
+            }
+            currentUser = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('user-info').innerHTML = `<i class="fas fa-user-shield mr-1"></i> ${user.nombre}`;
+            document.getElementById('firma-elabora').value = user.nombre;
+
+            let hoy = hoyISO();
+            let inicioMes = hoy.substring(0, 8) + '01';
+            document.getElementById('fecha-desde').value = inicioMes;
+            document.getElementById('fecha-hasta').value = hoy;
+            procesarInformes();
+        }
+
+        function cerrarSesion() { location.reload(); }
+
+        function parseItems(v) {
+            try {
+                return typeof v.items_json === 'string' ? JSON.parse(v.items_json || '[]') : (v.items_json || []);
+            } catch (e) { return []; }
+        }
+
+        function clasificarCilindro(nombre) {
+            let n = String(nombre || '').toLowerCase();
+            if (n.includes('100')) return '100';
+            if (n.includes('40')) return '40';
+            if (n.includes('30') || n.includes('33')) return '30';
+            return 'otro';
+        }
+
+        // ================= PROCESAMIENTO DE DATOS =================
+        function procesarInformes() {
+            let desde = document.getElementById('fecha-desde').value;
+            let hasta = document.getElementById('fecha-hasta').value;
+            if (!desde || !hasta) return Swal.fire('Atención', 'Selecciona Fecha Desde y Fecha Hasta.', 'warning');
+
+            calcularInformeVentas(desde, hasta);
+            calcularInformeBodega(desde, hasta);
+            renderPreviewVentas();
+            renderPreviewBodega();
+        }
+
+        function calcularInformeVentas(desde, hasta) {
+            let vtas = (db.ventas || []).filter(v => {
+                let f = soloFecha(v.fecha || v.fecha_hora);
+                return f >= desde && f <= hasta;
+            });
+
+            let gastos = (db.gastos || []).filter(g => {
+                let f = soloFecha(g.fecha);
+                return f >= desde && f <= hasta;
+            }).sort((a, b) => soloFecha(a.fecha).localeCompare(soloFecha(b.fecha)));
+
+            // 1. Ventas diarias
+            let mapaDias = {};
+            let mapaVend = {};
+            let totDia = { c30: 0, c40: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
+
+            vtas.forEach(v => {
+                let f = soloFecha(v.fecha || v.fecha_hora);
+                if (!mapaDias[f]) mapaDias[f] = { fecha: f, c30: 0, c40: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
+
+                let vend = (v.repartidor_nombre && String(v.repartidor_nombre).trim() !== '') ? String(v.repartidor_nombre).trim() : 'Ventanilla / Patio';
+                if (!mapaVend[vend]) mapaVend[vend] = { vendedor: vend, c30: 0, c40: 0, c100: 0, unds: 0, total: 0 };
+
+                let ef = Number(v.pago_efectivo || 0);
+                let bancos = Number(v.pago_nequi || 0) + Number(v.pago_transf || 0);
+                let tot = Number(v.total || 0);
+
+                mapaDias[f].ef += ef;
+                mapaDias[f].bancos += bancos;
+                mapaDias[f].total += tot;
+
+                totDia.ef += ef;
+                totDia.bancos += bancos;
+                totDia.total += tot;
+
+                mapaVend[vend].total += tot;
+
+                parseItems(v).forEach(it => {
+                    let cant = Number(it.cantidad || 0);
+                    let tipo = clasificarCilindro(it.producto_nombre);
+                    if (tipo === '30') { mapaDias[f].c30 += cant; mapaVend[vend].c30 += cant; totDia.c30 += cant; }
+                    if (tipo === '40') { mapaDias[f].c40 += cant; mapaVend[vend].c40 += cant; totDia.c40 += cant; }
+                    if (tipo === '100') { mapaDias[f].c100 += cant; mapaVend[vend].c100 += cant; totDia.c100 += cant; }
+                    mapaDias[f].unds += cant;
+                    mapaVend[vend].unds += cant;
+                    totDia.unds += cant;
+                });
+            });
+
+            let filasDias = Object.values(mapaDias).sort((a, b) => a.fecha.localeCompare(b.fecha));
+            let filasVend = Object.values(mapaVend).sort((a, b) => b.total - a.total);
+            let totalGastos = gastos.reduce((acc, g) => acc + Number(g.monto || 0), 0);
+
+            datosVentas = {
+                desde, hasta,
+                emision: hoyISO(),
+                filasDias,
+                totDia,
+                filasVend,
+                gastos,
+                totalGastos,
+                saldoNeto: totDia.total - totalGastos
+            };
+        }
+
+        function calcularInformeBodega(desde, hasta) {
+            let productos = (db.productos || []).filter(p => p.activo === 'SI');
+            let movs = (db.movimientos || []);
+            let ventas = (db.ventas || []);
+
+            let resumen = productos.map(p => {
+                let finLlenos = Number(p.stock_llenos || 0);
+                let finVacios = Number(p.stock_vacios || 0);
+
+                // Revertir movimientos posteriores a "hasta" para obtener saldo al cierre del periodo
+                movs.forEach(m => {
+                    let f = soloFecha(m.fecha_hora);
+                    if (f > hasta && (m.producto_id === p.id || m.producto_nombre === p.nombre)) {
+                        let cant = Number(m.cantidad || 0);
+                        if (m.tipo === 'INGRESO') finLlenos -= cant;
+                        if (m.tipo === 'SALIDA_VACIOS') finVacios += cant;
+                    }
+                });
+
+                ventas.forEach(v => {
+                    let f = soloFecha(v.fecha || v.fecha_hora);
+                    if (f > hasta) {
+                        parseItems(v).forEach(it => {
+                            if (it.producto_id === p.id || it.producto_nombre === p.nombre) {
+                                let cant = Number(it.cantidad || 0);
+                                finLlenos += cant;
+                                finVacios -= cant;
+                            }
+                        });
+                    }
+                });
+
+                finLlenos = Math.max(0, finLlenos);
+                finVacios = Math.max(0, finVacios);
+
+                // Movimientos dentro del periodo
+                let entLlenos = 0, salVacios = 0, vendidos = 0;
+                movs.forEach(m => {
+                    let f = soloFecha(m.fecha_hora);
+                    if (f >= desde && f <= hasta && (m.producto_id === p.id || m.producto_nombre === p.nombre)) {
+                        let cant = Number(m.cantidad || 0);
+                        if (m.tipo === 'INGRESO') entLlenos += cant;
+                        if (m.tipo === 'SALIDA_VACIOS') salVacios += cant;
+                    }
+                });
+
+                ventas.forEach(v => {
+                    let f = soloFecha(v.fecha || v.fecha_hora);
+                    if (f >= desde && f <= hasta) {
+                        parseItems(v).forEach(it => {
+                            if (it.producto_id === p.id || it.producto_nombre === p.nombre) {
+                                vendidos += Number(it.cantidad || 0);
+                            }
+                        });
+                    }
+                });
+
+                let iniLlenos = Math.max(0, finLlenos - entLlenos + vendidos);
+                let iniVacios = Math.max(0, finVacios - vendidos + salVacios);
+
+                return {
+                    nombre: p.nombre,
+                    iniLlenos, iniVacios,
+                    entLlenos, vendidos, salVacios,
+                    finLlenos, finVacios
+                };
+            });
+
+            let totRes = resumen.reduce((a, r) => ({
+                iniLlenos: a.iniLlenos + r.iniLlenos,
+                iniVacios: a.iniVacios + r.iniVacios,
+                entLlenos: a.entLlenos + r.entLlenos,
+                vendidos: a.vendidos + r.vendidos,
+                salVacios: a.salVacios + r.salVacios,
+                finLlenos: a.finLlenos + r.finLlenos,
+                finVacios: a.finVacios + r.finVacios
+            }), { iniLlenos: 0, iniVacios: 0, entLlenos: 0, vendidos: 0, salVacios: 0, finLlenos: 0, finVacios: 0 });
+
+            let movsPeriodo = movs.filter(m => {
+                let f = soloFecha(m.fecha_hora);
+                return f >= desde && f <= hasta && (m.tipo === 'INGRESO' || m.tipo === 'SALIDA_VACIOS');
+            }).sort((a, b) => String(a.fecha_hora).localeCompare(String(b.fecha_hora)));
+
+            let prestamos = (db.creditos || []).filter(c => {
+                let f = soloFecha(c.fecha_registro);
+                return (c.estado !== 'LIQUIDADO' && c.estado !== 'DEVUELTO') || (f >= desde && f <= hasta);
+            });
+
+            datosBodega = {
+                desde, hasta,
+                emision: hoyISO(),
+                resumen, totRes,
+                movsPeriodo,
+                prestamos
+            };
+        }
+
+        // ================= VISTAS PREVIAS EN PANTALLA =================
+        function renderPreviewVentas() {
+            let d = datosVentas;
+            let elabora = document.getElementById('firma-elabora').value || '_______________________';
+            let aprueba = document.getElementById('firma-aprueba').value || '_______________________';
+
+            let rowsDias = d.filasDias.map(r => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5 font-bold">${r.fecha}</td>
+                    <td class="p-1.5 text-center">${r.c30}</td>
+                    <td class="p-1.5 text-center">${r.c40}</td>
+                    <td class="p-1.5 text-center">${r.c100}</td>
+                    <td class="p-1.5 text-center font-bold">${r.unds}</td>
+                    <td class="p-1.5 text-right">${formMoneda(r.ef)}</td>
+                    <td class="p-1.5 text-right">${formMoneda(r.bancos)}</td>
+                    <td class="p-1.5 text-right font-black">${formMoneda(r.total)}</td>
+                </tr>`).join('') || '<tr><td colspan="8" class="p-3 text-center text-slate-400">Sin ventas en este periodo.</td></tr>';
+
+            let rowsVend = d.filasVend.map(r => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5 font-bold">${r.vendedor}</td>
+                    <td class="p-1.5 text-center">${r.c30}</td>
+                    <td class="p-1.5 text-center">${r.c40}</td>
+                    <td class="p-1.5 text-center">${r.c100}</td>
+                    <td class="p-1.5 text-center font-bold">${r.unds}</td>
+                    <td class="p-1.5 text-right font-black">${formMoneda(r.total)}</td>
+                </tr>`).join('') || '<tr><td colspan="6" class="p-3 text-center text-slate-400">Sin ventas registradas.</td></tr>';
+
+            let rowsGastos = d.gastos.map(g => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5">${soloFecha(g.fecha)}</td>
+                    <td class="p-1.5 text-center">${g.tipo_gasto || ''}</td>
+                    <td class="p-1.5 text-center">${g.origen || ''}</td>
+                    <td class="p-1.5">${g.concepto || ''}</td>
+                    <td class="p-1.5 text-right font-bold text-rose-700">${formMoneda(g.monto)}</td>
+                </tr>`).join('') || '<tr><td colspan="5" class="p-3 text-center text-slate-400">Sin gastos en este periodo.</td></tr>';
+
+            document.getElementById('preview-ventas').innerHTML = `
+                <div class="border-b-2 border-[#1e3a8a] pb-3 mb-5 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-2xl font-black text-[#1e3a8a] leading-none">${EMPRESA.nombre}</h2>
+                        <p class="text-xs font-bold text-slate-600 mt-1">${EMPRESA.grupo} • ${EMPRESA.nit}</p>
+                        <p class="text-[11px] text-slate-500">${EMPRESA.direccion} | ${EMPRESA.telefono}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-[#1e3a8a] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded">Informe Consolidado</span>
+                        <p class="text-xs font-bold text-slate-700 mt-1.5">Periodo: ${d.desde} al ${d.hasta}</p>
+                        <p class="text-[11px] text-slate-500">Emisión: ${d.emision}</p>
+                    </div>
+                </div>
+
+                <h3 class="text-center font-black text-base text-slate-800 uppercase tracking-wide mb-5">INFORME CONSOLIDADO DE VENTAS Y GASTOS</h3>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">1. Total de Ventas Diarias en el Ciclo</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-5">
+                    <thead class="bg-[#1e3a8a] text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Fecha</th>
+                            <th class="p-1.5 text-center">33/30 lb</th>
+                            <th class="p-1.5 text-center">40 lb</th>
+                            <th class="p-1.5 text-center">100 lb</th>
+                            <th class="p-1.5 text-center">Unds</th>
+                            <th class="p-1.5 text-right">Efectivo</th>
+                            <th class="p-1.5 text-right">Transf/Nequi</th>
+                            <th class="p-1.5 text-right">Total Venta</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsDias}</tbody>
+                    <tfoot class="bg-slate-100 font-black">
+                        <tr>
+                            <td class="p-1.5">TOTALES</td>
+                            <td class="p-1.5 text-center">${d.totDia.c30}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c40}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c100}</td>
+                            <td class="p-1.5 text-center">${d.totDia.unds}</td>
+                            <td class="p-1.5 text-right">${formMoneda(d.totDia.ef)}</td>
+                            <td class="p-1.5 text-right">${formMoneda(d.totDia.bancos)}</td>
+                            <td class="p-1.5 text-right text-emerald-700">${formMoneda(d.totDia.total)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">2. Ventas por Vendedor / Repartidor</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-5">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Vendedor / Canal</th>
+                            <th class="p-1.5 text-center">33/30 lb</th>
+                            <th class="p-1.5 text-center">40 lb</th>
+                            <th class="p-1.5 text-center">100 lb</th>
+                            <th class="p-1.5 text-center">Total Unds</th>
+                            <th class="p-1.5 text-right">Total Recaudado</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsVend}</tbody>
+                    <tfoot class="bg-slate-100 font-black">
+                        <tr>
+                            <td class="p-1.5">TOTAL GENERAL</td>
+                            <td class="p-1.5 text-center">${d.totDia.c30}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c40}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c100}</td>
+                            <td class="p-1.5 text-center">${d.totDia.unds}</td>
+                            <td class="p-1.5 text-right">${formMoneda(d.totDia.total)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">3. Gastos Detallados del Periodo</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-5">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Fecha</th>
+                            <th class="p-1.5 text-center">Tipo</th>
+                            <th class="p-1.5 text-center">Origen</th>
+                            <th class="p-1.5 text-left">Concepto</th>
+                            <th class="p-1.5 text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsGastos}</tbody>
+                    <tfoot class="bg-slate-100 font-black">
+                        <tr>
+                            <td colspan="4" class="p-1.5 text-right">TOTAL GASTOS DEL PERIODO:</td>
+                            <td class="p-1.5 text-right text-rose-700">${formMoneda(d.totalGastos)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">4. Resumen Financiero del Ciclo</h4>
+                <table class="w-full text-xs border border-slate-300 mb-10">
+                    <tbody>
+                        <tr class="border-b border-slate-200"><td class="p-2 font-bold">Total Ingresos por Ventas (Efectivo: ${formMoneda(d.totDia.ef)} | Bancos: ${formMoneda(d.totDia.bancos)})</td><td class="p-2 text-right font-black text-emerald-700">${formMoneda(d.totDia.total)}</td></tr>
+                        <tr class="border-b border-slate-200"><td class="p-2 font-bold">(-) Total Gastos Registrados en el Periodo</td><td class="p-2 text-right font-black text-rose-700">-${formMoneda(d.totalGastos)}</td></tr>
+                        <tr class="bg-blue-50"><td class="p-2 font-black text-[#1e3a8a]">(=) SALDO NETO DEL CICLO</td><td class="p-2 text-right font-black text-base text-[#1e3a8a]">${formMoneda(d.saldoNeto)}</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="grid grid-cols-2 gap-12 pt-8 text-center text-xs">
+                    <div>
+                        <div class="border-t border-slate-700 pt-2 font-black">${elabora}</div>
+                        <div class="text-slate-500">Elaborado por</div>
+                    </div>
+                    <div>
+                        <div class="border-t border-slate-700 pt-2 font-black">${aprueba}</div>
+                        <div class="text-slate-500">Revisado y Aprobado</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPreviewBodega() {
+            let d = datosBodega;
+            let elabora = document.getElementById('firma-elabora').value || '_______________________';
+            let aprueba = document.getElementById('firma-aprueba').value || '_______________________';
+
+            let rowsRes = d.resumen.map(r => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5 font-bold">${r.nombre}</td>
+                    <td class="p-1.5 text-center">${r.iniLlenos}</td>
+                    <td class="p-1.5 text-center">${r.iniVacios}</td>
+                    <td class="p-1.5 text-center text-emerald-700 font-bold">+${r.entLlenos}</td>
+                    <td class="p-1.5 text-center text-blue-700 font-bold">${r.vendidos}</td>
+                    <td class="p-1.5 text-center text-amber-700 font-bold">-${r.salVacios}</td>
+                    <td class="p-1.5 text-center font-black bg-emerald-50">${r.finLlenos}</td>
+                    <td class="p-1.5 text-center font-black bg-amber-50">${r.finVacios}</td>
+                </tr>`).join('') || '<tr><td colspan="8" class="p-3 text-center text-slate-400">Sin productos activos.</td></tr>';
+
+            let rowsMovs = d.movsPeriodo.map(m => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5">${String(m.fecha_hora || '').substring(0, 16)}</td>
+                    <td class="p-1.5 text-center font-bold ${m.tipo === 'INGRESO' ? 'text-emerald-700' : 'text-amber-700'}">${m.tipo === 'INGRESO' ? 'ENTRADA LLENOS' : 'SALIDA VACÍOS'}</td>
+                    <td class="p-1.5 font-bold">${m.producto_nombre || ''}</td>
+                    <td class="p-1.5 text-center font-black">${m.cantidad}</td>
+                    <td class="p-1.5">${m.observacion || ''}</td>
+                </tr>`).join('') || '<tr><td colspan="5" class="p-3 text-center text-slate-400">Sin entradas de llenos ni salidas de vacíos en este periodo.</td></tr>';
+
+            let rowsPrest = d.prestamos.map(c => `
+                <tr class="border-b border-slate-200">
+                    <td class="p-1.5">${soloFecha(c.fecha_registro)}</td>
+                    <td class="p-1.5 font-bold">${c.cliente_nombre || ''}</td>
+                    <td class="p-1.5 text-center font-bold">${c.tipo_credito || ''}</td>
+                    <td class="p-1.5">${c.producto_nombre || ''}</td>
+                    <td class="p-1.5 text-center">${c.cantidad_pendiente} / ${c.cantidad_inicial}</td>
+                    <td class="p-1.5 text-right font-bold">${formMoneda(c.saldo_dinero)}</td>
+                    <td class="p-1.5 text-center">${c.estado || ''}</td>
+                </tr>`).join('') || '<tr><td colspan="7" class="p-3 text-center text-slate-400">Sin préstamos de cilindros registrados.</td></tr>';
+
+            document.getElementById('preview-bodega').innerHTML = `
+                <div class="border-b-2 border-[#1e3a8a] pb-3 mb-5 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-2xl font-black text-[#1e3a8a] leading-none">${EMPRESA.nombre}</h2>
+                        <p class="text-xs font-bold text-slate-600 mt-1">${EMPRESA.grupo} • ${EMPRESA.nit}</p>
+                        <p class="text-[11px] text-slate-500">${EMPRESA.direccion} | ${EMPRESA.telefono}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-emerald-700 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded">Control de Bodega</span>
+                        <p class="text-xs font-bold text-slate-700 mt-1.5">Periodo: ${d.desde} al ${d.hasta}</p>
+                        <p class="text-[11px] text-slate-500">Emisión: ${d.emision}</p>
+                    </div>
+                </div>
+
+                <h3 class="text-center font-black text-base text-slate-800 uppercase tracking-wide mb-5">INFORME DE CONTROL E INVENTARIO DE BODEGA (GLP)</h3>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">1. Saldo Inicial, Movimientos y Saldo Final</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-5">
+                    <thead class="bg-[#1e3a8a] text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Presentación</th>
+                            <th class="p-1.5 text-center">Ini. Llenos</th>
+                            <th class="p-1.5 text-center">Ini. Vacíos</th>
+                            <th class="p-1.5 text-center">Ent. Llenos</th>
+                            <th class="p-1.5 text-center">Ventas</th>
+                            <th class="p-1.5 text-center">Sal. Vacíos</th>
+                            <th class="p-1.5 text-center">Fin. Llenos</th>
+                            <th class="p-1.5 text-center">Fin. Vacíos</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsRes}</tbody>
+                    <tfoot class="bg-slate-100 font-black">
+                        <tr>
+                            <td class="p-1.5">TOTALES</td>
+                            <td class="p-1.5 text-center">${d.totRes.iniLlenos}</td>
+                            <td class="p-1.5 text-center">${d.totRes.iniVacios}</td>
+                            <td class="p-1.5 text-center">+${d.totRes.entLlenos}</td>
+                            <td class="p-1.5 text-center">${d.totRes.vendidos}</td>
+                            <td class="p-1.5 text-center">-${d.totRes.salVacios}</td>
+                            <td class="p-1.5 text-center">${d.totRes.finLlenos}</td>
+                            <td class="p-1.5 text-center">${d.totRes.finVacios}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">2. Detalle de Entradas de Llenos y Salidas de Vacíos</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-5">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Fecha y Hora</th>
+                            <th class="p-1.5 text-center">Movimiento</th>
+                            <th class="p-1.5 text-left">Presentación</th>
+                            <th class="p-1.5 text-center">Cant.</th>
+                            <th class="p-1.5 text-left">Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsMovs}</tbody>
+                </table>
+
+                <h4 class="text-xs font-black uppercase text-[#1e3a8a] mb-2">3. Préstamos de Envases a Clientes Especiales</h4>
+                <table class="w-full text-[11px] border border-slate-300 mb-10">
+                    <thead class="bg-slate-800 text-white">
+                        <tr>
+                            <th class="p-1.5 text-left">Fecha</th>
+                            <th class="p-1.5 text-left">Cliente</th>
+                            <th class="p-1.5 text-center">Tipo</th>
+                            <th class="p-1.5 text-left">Presentación</th>
+                            <th class="p-1.5 text-center">Pend/Ini</th>
+                            <th class="p-1.5 text-right">Saldo ($)</th>
+                            <th class="p-1.5 text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsPrest}</tbody>
+                </table>
+
+                <div class="grid grid-cols-2 gap-12 pt-8 text-center text-xs">
+                    <div>
+                        <div class="border-t border-slate-700 pt-2 font-black">${elabora}</div>
+                        <div class="text-slate-500">Responsable de Bodega / Elaboró</div>
+                    </div>
+                    <div>
+                        <div class="border-t border-slate-700 pt-2 font-black">${aprueba}</div>
+                        <div class="text-slate-500">Revisión Administrativa</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ================= EXPORTACIÓN NATIVA A WORD (.DOCX) CARTA VERTICAL =================
+        function descargarWordActivo() {
+            if (!window.docx) return Swal.fire('Error', 'No se cargó la librería de Word. Revisa tu conexión.', 'error');
+            if (tabActiva === 'ventas') exportarWordVentas();
+            else exportarWordBodega();
+        }
+
+        function crearCelda(texto, { bold = false, align = 'left', fill = null, color = '1E293B', size = 18, colSpan = 1, widthPct = null } = {}) {
+            const { TableCell, Paragraph, TextRun, AlignmentType, ShadingType, VerticalAlign, WidthType } = window.docx;
+            const mapAlign = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT };
+            let opts = {
+                columnSpan: colSpan,
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 70, bottom: 70, left: 90, right: 90 },
+                children: [
+                    new Paragraph({
+                        alignment: mapAlign[align] || AlignmentType.LEFT,
+                        spacing: { before: 0, after: 0 },
+                        children: [new TextRun({ text: String(texto ?? ''), bold, color, size, font: 'Calibri' })]
+                    })
+                ]
+            };
+            if (fill) opts.shading = { type: ShadingType.CLEAR, color: 'auto', fill };
+            if (widthPct) opts.width = { size: widthPct, type: WidthType.PERCENTAGE };
+            return new TableCell(opts);
+        }
+
+        function crearTablaWord(headers, filas, footer, alignments, widths, headerFill = '1E3A8A') {
+            const { Table, TableRow, WidthType, BorderStyle } = window.docx;
+            const border = { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' };
+            const tableRows = [];
+
+            tableRows.push(new TableRow({
+                tableHeader: true,
+                children: headers.map((h, i) => crearCelda(h, { bold: true, align: alignments[i], fill: headerFill, color: 'FFFFFF', size: 17, widthPct: widths[i] }))
+            }));
+
+            if (filas.length === 0) {
+                tableRows.push(new TableRow({
+                    children: [crearCelda('Sin registros en el periodo seleccionado.', { align: 'center', color: '64748B', size: 17, colSpan: headers.length })]
+                }));
+            } else {
+                filas.forEach((f, idx) => {
+                    let bg = idx % 2 === 1 ? 'F8FAFC' : null;
+                    tableRows.push(new TableRow({
+                        children: f.map((val, i) => crearCelda(val, { align: alignments[i], fill: bg, size: 17, widthPct: widths[i] }))
+                    }));
+                });
+            }
+
+            if (footer) {
+                tableRows.push(new TableRow({
+                    children: footer.map((val, i) => crearCelda(val, { bold: true, align: alignments[i], fill: 'E2E8F0', color: '0F172A', size: 17, widthPct: widths[i] }))
+                }));
+            }
+
+            return new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: { top: border, bottom: border, left: border, right: border, insideHorizontal: border, insideVertical: border },
+                rows: tableRows
+            });
+        }
+
+        function bloqueEncabezadoWord(tituloDoc, desde, hasta, emision) {
+            const { Paragraph, TextRun, AlignmentType, BorderStyle } = window.docx;
+            return [
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 40 },
+                    children: [new TextRun({ text: `${EMPRESA.nombre} — ${EMPRESA.grupo}`, bold: true, size: 28, color: '1E3A8A', font: 'Calibri' })]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 40 },
+                    children: [new TextRun({ text: `${EMPRESA.nit}  |  ${EMPRESA.telefono}`, bold: true, size: 18, color: '475569', font: 'Calibri' })]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 140 },
+                    border: { bottom: { color: '1E3A8A', space: 6, style: BorderStyle.SINGLE, size: 12 } },
+                    children: [new TextRun({ text: EMPRESA.direccion, size: 17, color: '64748B', font: 'Calibri' })]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 140, after: 60 },
+                    children: [new TextRun({ text: tituloDoc, bold: true, size: 24, color: '0F172A', font: 'Calibri' })]
+                }),
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [new TextRun({ text: `Periodo del Ciclo: ${desde} al ${hasta}   |   Fecha de emisión: ${emision}`, bold: true, size: 18, color: '334155', font: 'Calibri' })]
+                })
+            ];
+        }
+
+        function tituloSeccionWord(texto) {
+            const { Paragraph, TextRun } = window.docx;
+            return new Paragraph({
+                spacing: { before: 220, after: 80 },
+                children: [new TextRun({ text: texto, bold: true, size: 20, color: '1E3A8A', font: 'Calibri' })]
+            });
+        }
+
+        function bloqueFirmasWord(cargo1, cargo2) {
+            const { Table, TableRow, TableCell, Paragraph, TextRun, AlignmentType, WidthType, BorderStyle } = window.docx;
+            let elabora = document.getElementById('firma-elabora').value || '_________________________';
+            let aprueba = document.getElementById('firma-aprueba').value || '_________________________';
+            const sinBorde = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+
+            const celdaFirma = (nombre, cargo) => new TableCell({
+                width: { size: 50, type: WidthType.PERCENTAGE },
+                margins: { top: 450, bottom: 60, left: 200, right: 200 },
+                children: [
+                    new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        border: { top: { style: BorderStyle.SINGLE, size: 6, color: '334155', space: 4 } },
+                        spacing: { after: 30 },
+                        children: [new TextRun({ text: nombre, bold: true, size: 19, font: 'Calibri', color: '0F172A' })]
+                    }),
+                    new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [new TextRun({ text: cargo, size: 17, font: 'Calibri', color: '64748B' })]
+                    })
+                ]
+            });
+
+            return new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: { top: sinBorde, bottom: sinBorde, left: sinBorde, right: sinBorde, insideHorizontal: sinBorde, insideVertical: sinBorde },
+                rows: [new TableRow({ children: [celdaFirma(elabora, cargo1), celdaFirma(aprueba, cargo2)] })]
+            });
+        }
+
+        async function guardarDocx(children, nombreArchivo) {
+            const { Document, Packer, PageOrientation } = window.docx;
+            const doc = new Document({
+                sections: [{
+                    properties: {
+                        page: {
+                            // Tamaño CARTA exacto (8.5 x 11 pulgadas = 12240 x 15840 twips) en orientación VERTICAL
+                            size: { width: 12240, height: 15840, orientation: PageOrientation.PORTRAIT },
+                            margin: { top: 850, right: 850, bottom: 850, left: 850 }
+                        }
+                    },
+                    children
+                }]
+            });
+            const blob = await Packer.toBlob(doc);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportarWordVentas() {
+            let d = datosVentas;
+            let children = [
+                ...bloqueEncabezadoWord('INFORME CONSOLIDADO DE VENTAS Y GASTOS', d.desde, d.hasta, d.emision),
+
+                tituloSeccionWord('1. TOTAL DE VENTAS DIARIAS EN EL CICLO'),
+                crearTablaWord(
+                    ['Fecha', '33/30 lb', '40 lb', '100 lb', 'Unds', 'Efectivo', 'Transf/Nequi', 'Total Venta'],
+                    d.filasDias.map(r => [r.fecha, r.c30, r.c40, r.c100, r.unds, formMoneda(r.ef), formMoneda(r.bancos), formMoneda(r.total)]),
+                    ['TOTALES', d.totDia.c30, d.totDia.c40, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.ef), formMoneda(d.totDia.bancos), formMoneda(d.totDia.total)],
+                    ['left', 'center', 'center', 'center', 'center', 'right', 'right', 'right'],
+                    [15, 9, 8, 9, 8, 17, 17, 17]
+                ),
+
+                tituloSeccionWord('2. VENTAS POR VENDEDOR / REPARTIDOR'),
+                crearTablaWord(
+                    ['Vendedor / Canal', '33/30 lb', '40 lb', '100 lb', 'Total Unds', 'Total Recaudado'],
+                    d.filasVend.map(r => [r.vendedor, r.c30, r.c40, r.c100, r.unds, formMoneda(r.total)]),
+                    ['TOTAL GENERAL', d.totDia.c30, d.totDia.c40, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.total)],
+                    ['left', 'center', 'center', 'center', 'center', 'right'],
+                    [34, 10, 10, 10, 12, 24],
+                    '1E293B'
+                ),
+
+                tituloSeccionWord('3. GASTOS DETALLADOS DEL PERIODO'),
+                crearTablaWord(
+                    ['Fecha', 'Tipo', 'Origen', 'Concepto', 'Monto'],
+                    d.gastos.map(g => [soloFecha(g.fecha), g.tipo_gasto || '', g.origen || '', g.concepto || '', formMoneda(g.monto)]),
+                    ['', '', '', 'TOTAL GASTOS DEL PERIODO', formMoneda(d.totalGastos)],
+                    ['left', 'center', 'center', 'left', 'right'],
+                    [15, 14, 12, 41, 18],
+                    '1E293B'
+                ),
+
+                tituloSeccionWord('4. RESUMEN FINANCIERO DEL CICLO'),
+                crearTablaWord(
+                    ['Concepto Financiero', 'Valor'],
+                    [
+                        [`Total Ingresos por Ventas (Efectivo: ${formMoneda(d.totDia.ef)} | Bancos: ${formMoneda(d.totDia.bancos)})`, formMoneda(d.totDia.total)],
+                        ['(-) Total Gastos del Periodo', `-${formMoneda(d.totalGastos)}`]
+                    ],
+                    ['(=) SALDO NETO DEL CICLO', formMoneda(d.saldoNeto)],
+                    ['left', 'right'],
+                    [72, 28],
+                    '1E3A8A'
+                ),
+
+                bloqueFirmasWord('Elaborado por', 'Revisado y Aprobado')
+            ];
+
+            await guardarDocx(children, `Informe_Ventas_GasGuainia_${d.desde}_a_${d.hasta}.docx`);
+        }
+
+        async function exportarWordBodega() {
+            let d = datosBodega;
+            let children = [
+                ...bloqueEncabezadoWord('INFORME DE CONTROL E INVENTARIO DE BODEGA (GLP)', d.desde, d.hasta, d.emision),
+
+                tituloSeccionWord('1. SALDO INICIAL, MOVIMIENTOS Y SALDO FINAL'),
+                crearTablaWord(
+                    ['Presentación', 'Ini. Llen', 'Ini. Vac', 'Ent. Llen', 'Ventas', 'Sal. Vac', 'Fin. Llen', 'Fin. Vac'],
+                    d.resumen.map(r => [r.nombre, r.iniLlenos, r.iniVacios, `+${r.entLlenos}`, r.vendidos, `-${r.salVacios}`, r.finLlenos, r.finVacios]),
+                    ['TOTALES', d.totRes.iniLlenos, d.totRes.iniVacios, `+${d.totRes.entLlenos}`, d.totRes.vendidos, `-${d.totRes.salVacios}`, d.totRes.finLlenos, d.totRes.finVacios],
+                    ['left', 'center', 'center', 'center', 'center', 'center', 'center', 'center'],
+                    [30, 10, 10, 10, 10, 10, 10, 10]
+                ),
+
+                tituloSeccionWord('2. REGISTRO DETALLADO DE ENTRADAS DE LLENOS Y SALIDAS DE VACÍOS'),
+                crearTablaWord(
+                    ['Fecha y Hora', 'Movimiento', 'Presentación', 'Cant.', 'Observación'],
+                    d.movsPeriodo.map(m => [String(m.fecha_hora || '').substring(0, 16), m.tipo === 'INGRESO' ? 'ENTRADA LLENOS' : 'SALIDA VACÍOS', m.producto_nombre || '', m.cantidad, m.observacion || '']),
+                    null,
+                    ['left', 'center', 'left', 'center', 'left'],
+                    [18, 17, 25, 8, 32],
+                    '1E293B'
+                ),
+
+                tituloSeccionWord('3. PRÉSTAMOS DE ENVASES A CLIENTES ESPECIALES'),
+                crearTablaWord(
+                    ['Fecha', 'Cliente', 'Tipo', 'Presentación', 'Pend/Ini', 'Saldo ($)', 'Estado'],
+                    d.prestamos.map(c => [soloFecha(c.fecha_registro), c.cliente_nombre || '', c.tipo_credito || '', c.producto_nombre || '', `${c.cantidad_pendiente}/${c.cantidad_inicial}`, formMoneda(c.saldo_dinero), c.estado || '']),
+                    null,
+                    ['left', 'left', 'center', 'left', 'center', 'right', 'center'],
+                    [13, 22, 10, 21, 10, 14, 10],
+                    '1E293B'
+                ),
+
+                bloqueFirmasWord('Responsable de Bodega / Elaboró', 'Revisión Administrativa')
+            ];
+
+            await guardarDocx(children, `Informe_Bodega_GasGuainia_${d.desde}_a_${d.hasta}.docx`);
+        }
+
+        // Carga inicial
+        syncData();
+    </script>
+</body>
+</html>
