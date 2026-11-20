@@ -17,15 +17,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* FIX QUIRÚRGICO: Ocultar áreas de impresión en pantalla normal sin usar la clase conflictiva */
         #ticket-area, #letter-area { display: none; }
 
         @media print {
             body * { visibility: hidden; }
-            /* Forzar visualización de tirilla */
             body.print-ticket #ticket-area, body.print-ticket #ticket-area * { visibility: visible !important; display: block !important; }
-            body.print-ticket #ticket-area { position: absolute; left: 0; top: 0; width: 58mm; padding: 2mm; font-family: monospace; font-size: 12px; color: black; }
-            /* Forzar visualización de tamaño carta */
+            body.print-ticket #ticket-area { position: absolute; left: 0; top: 0; width: 58mm; padding: 2mm; font-family: monospace; font-size: 12px; color: black; white-space: pre-wrap; }
             body.print-letter #letter-area, body.print-letter #letter-area * { visibility: visible !important; display: block !important; }
             body.print-letter #letter-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: sans-serif; color: black; }
             .no-print { display: none !important; }
@@ -36,7 +33,7 @@
         .tab-content.active, .subtab-content.active { display: block !important; animation: fade 0.3s ease; }
         @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-        .tab-btn { border-bottom: 3px solid transparent; transition: all 0.2s; color: #475569; font-weight: 700; }
+        .tab-btn { border-bottom: 3px solid transparent; transition: all 0.2s; color: #475569; font-weight: 700; white-space: nowrap; }
         .tab-btn.active { border-bottom: 3px solid #0284c7; color: #0284c7; font-weight: 900; background-color: #f0f9ff; }
         
         .subtab-btn { background: transparent; border-radius: 9999px; transition: all 0.2s; color: #64748b; font-weight: 700; padding: 0.5rem 1.5rem; }
@@ -84,8 +81,10 @@
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-domicilios')"><i class="fas fa-motorcycle mr-2"></i> Domicilios</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-alertas')"><i class="fas fa-bell mr-2"></i> Por Vencer</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-rutas')"><i class="fas fa-route mr-2"></i> Rutas y Liq.</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-prestamos')"><i class="fas fa-hand-holding-heart mr-2"></i> Préstamos</button>
+        <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-cierres')"><i class="fas fa-archive mr-2"></i> Cierres</button>
         <button class="tab-btn px-4 py-3" onclick="openTab(event, 'tab-gastos')"><i class="fas fa-receipt mr-2"></i> Gastos Caja</button>
-        <button onclick="arqueoDeCaja()" class="ml-auto bg-rose-50 text-rose-700 hover:bg-rose-100 font-black px-4 py-2 my-1.5 rounded border border-rose-200 shadow-sm active:scale-95"><i class="fas fa-cash-register mr-2"></i> Cierre Diario</button>
+        <button onclick="arqueoDeCaja()" class="ml-auto bg-rose-50 text-rose-700 hover:bg-rose-100 font-black px-4 py-2 my-1.5 rounded border border-rose-200 shadow-sm active:scale-95 whitespace-nowrap"><i class="fas fa-cash-register mr-2"></i> Cierre Diario</button>
     </nav>
 
     <!-- MAIN APP AREA -->
@@ -93,7 +92,7 @@
         
         <!-- PESTAÑA 1: VENTA PATIO -->
         <div id="tab-patio" class="tab-content active h-full flex flex-col">
-            <div class="bg-[#1e293b] p-3 flex gap-4 overflow-x-auto shrink-0" id="barra-stock-superior"></div>
+            <div class="bg-[#1e293b] p-3 flex gap-4 overflow-x-auto shrink-0 items-center" id="barra-stock-superior"></div>
             
             <div class="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
                 <div class="flex-1 flex flex-col overflow-hidden">
@@ -137,7 +136,7 @@
                 </div>
                 <div class="flex-1 overflow-y-auto p-4">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-800 text-white"><tr><th class="p-3 rounded-tl-lg">Hora</th><th class="p-3">Recibo</th><th class="p-3">Cliente</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3 text-center rounded-tr-lg">Acción</th></tr></thead>
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3 rounded-tl-lg">Hora</th><th class="p-3">Recibo</th><th class="p-3">Cliente</th><th class="p-3">Vendedor</th><th class="p-3">Total</th><th class="p-3">Pago</th><th class="p-3 text-center rounded-tr-lg">Acción</th></tr></thead>
                         <tbody id="lista-historial-facturas" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
@@ -189,6 +188,37 @@
             </div>
         </div>
 
+        <!-- NUEVA PESTAÑA: PRÉSTAMOS / CLIENTES ESPECIALES -->
+        <div id="tab-prestamos" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <div>
+                        <h2 class="text-lg font-black text-[#1e3a8a]">Préstamos y Créditos Especiales</h2>
+                        <p class="text-xs font-bold text-slate-500">Control de cilindros llenos y vacíos prestados a clientes.</p>
+                    </div>
+                    <button onclick="nuevoPrestamo()" class="bg-[#3b82f6] hover:bg-blue-600 text-white px-5 py-2 rounded font-bold shadow-sm"><i class="fas fa-plus mr-2"></i> Nuevo Préstamo</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="lista-prestamos"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NUEVA PESTAÑA: HISTORIAL DE CIERRES DE CAJA -->
+        <div id="tab-cierres" class="tab-content h-full p-4">
+            <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                    <h2 class="text-lg font-black text-[#1e3a8a]">Historial de Cierres de Caja</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3 rounded-tl-lg">Fecha</th><th class="p-3">Cajero</th><th class="p-3">Base</th><th class="p-3">Efectivo Final</th><th class="p-3">Bancos</th><th class="p-3 text-center rounded-tr-lg">Ticket</th></tr></thead>
+                        <tbody id="lista-cierres-caja" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- GASTOS -->
         <div id="tab-gastos" class="tab-content h-full p-4">
             <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 w-full lg:w-1/2 mx-auto overflow-hidden">
@@ -201,20 +231,20 @@
         </div>
     </main>
 
-    <!-- FIX QUIRÚRGICO: Contenedores puros de impresión -->
     <div id="ticket-area"></div>
     <div id="letter-area"></div>
 
     <!-- SCRIPTS -->
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbzVebT-EsVILWNRSO_B6DlmVxdn-HrFOMJvsMmcXCcVJMOb_mVTbxLd8OQamD2Aq-ugPw/exec';
-        let db = { usuarios: [], productos: [], clientes: [], repartidores: [], gastos: [], ventas: [], domicilios: [], despachos: [] };
+        let db = { usuarios: [], productos: [], clientes: [], repartidores: [], gastos: [], ventas: [], domicilios: [], despachos: [], creditos: [], cierres: [] };
         
         let sesionActiva = JSON.parse(localStorage.getItem('sesionPOS_GasGuainia')) || null;
         let cajaAbierta = JSON.parse(localStorage.getItem('cajaPOS_GasGuainia')) || null;
         let carritoPOS = JSON.parse(localStorage.getItem('carritoPOS_GasGuainia')) || [];
         let ruteroActivo = null;
 
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
         const formMoneda = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
         const formatearFecha = (shift = 0) => { 
             let d = new Date(); 
@@ -256,16 +286,40 @@
         }
 
         function renderizarTodo() {
-            let htmlTop = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => { let c = p.stock_llenos>0 ? 'text-[#10b981]':'text-rose-400'; htmlTop += `<div class="bg-[#2a364a] border border-[#334155] rounded px-4 py-2 flex flex-col items-center min-w-[120px]"><span class="text-xs text-slate-300 font-bold mb-1 truncate max-w-[110px]" title="${p.nombre}">${p.nombre.replace('Cilindro de ','').replace('Cilindro ','')}</span><span class="text-lg font-black ${c}">${p.stock_llenos} llenos</span></div>`; }); document.getElementById('barra-stock-superior').innerHTML = htmlTop;
+            // Barra stock superior con llenos, vacíos y botón de salida de vacíos
+            let htmlTop = ''; 
+            db.productos.filter(p=>p.activo==='SI').forEach(p => { 
+                let c = p.stock_llenos>0 ? 'text-[#10b981]':'text-rose-400'; 
+                htmlTop += `<div class="bg-[#2a364a] border border-[#334155] rounded px-4 py-2 flex flex-col items-center min-w-[140px]"><span class="text-xs text-slate-300 font-bold mb-0.5 truncate max-w-[125px]" title="${p.nombre}">${p.nombre.replace('Cilindro de ','').replace('Cilindro ','')}</span><span class="text-base font-black ${c}">${p.stock_llenos} llenos</span><span class="text-[11px] font-bold text-amber-300">${p.stock_vacios || 0} vacíos</span></div>`; 
+            }); 
+            htmlTop += `<button onclick="salidaVacios()" class="ml-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider shrink-0 shadow"><i class="fas fa-dolly mr-1"></i> Salida Vacíos</button>`;
+            document.getElementById('barra-stock-superior').innerHTML = htmlTop;
 
             let htmlCat = ''; db.productos.filter(p=>p.activo==='SI').forEach(p => {
-                htmlCat += `<div class="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit mb-1">Gas GLP</span><h3 class="font-black text-slate-800 text-[13px] mb-1">${p.nombre}</h3><span class="text-xs font-bold ${p.stock_llenos>0?'text-[#10b981]':'text-slate-400'}">Stock Patio: ${p.stock_llenos}</span></div><div class="flex flex-col items-end"><span class="font-black text-[#10b981] text-lg mb-2">${formMoneda(p.precio_venta)}</span><button onclick="agregarAlCarrito('${p.id}')" class="bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition">Añadir</button></div></div>`;
+                htmlCat += `<div class="bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center shadow-sm"><div class="flex flex-col"><span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit mb-1">Gas GLP</span><h3 class="font-black text-slate-800 text-[13px] mb-1">${p.nombre}</h3><span class="text-xs font-bold ${p.stock_llenos>0?'text-[#10b981]':'text-slate-400'}">Stock Patio: ${p.stock_llenos} | Vacíos: ${p.stock_vacios||0}</span></div><div class="flex flex-col items-end"><span class="font-black text-[#10b981] text-lg mb-2">${formMoneda(p.precio_venta)}</span><button onclick="agregarAlCarrito('${p.id}')" class="bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition">Añadir</button></div></div>`;
             });
             document.getElementById('pos-catalogo').innerHTML = htmlCat;
 
             let opts = `<option value="CLI-00">Cliente Mostrador General (Sin Desc)</option>`; db.clientes.forEach(c => { if(c.id !== 'CLI-00') opts += `<option value="${c.id}">${c.nombre}</option>`; }); document.getElementById('pos-cliente').innerHTML = opts;
 
-            pintarCarrito(); renderHistorial(); renderEstadisticas(); renderAlertas(); renderGastosCaja(); renderDomicilios(); renderControlRutas();
+            pintarCarrito(); renderHistorial(); renderEstadisticas(); renderAlertas(); renderGastosCaja(); renderDomicilios(); renderControlRutas(); renderPrestamos(); renderCierres();
+        }
+
+        // ================= SALIDA DE CILINDROS VACÍOS =================
+        async function salidaVacios() {
+            let optsProd = db.productos.filter(p => p.activo === 'SI').map(p => `<option value="${p.id}">${p.nombre} (Vacíos: ${p.stock_vacios || 0})</option>`).join('');
+            let html = `<div class="text-left"><label class="swal-label">Cilindro</label><select id="sv-prod" class="swal-custom-input p-2 text-sm">${optsProd}</select><label class="swal-label">Cantidad Vacíos que Salen</label><input id="sv-cant" type="number" class="swal-custom-input p-2 text-xl text-center" value="1" min="1"></div>`;
+            let res = await Swal.fire({
+                title: 'SALIDA DE VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'DESCONTAR VACÍOS', confirmButtonColor: '#d97706',
+                preConfirm: () => ({ id: document.getElementById('sv-prod').value, cant: Number(document.getElementById('sv-cant').value || 0) })
+            });
+            if (res.isConfirmed && res.value.cant > 0) {
+                let prod = db.productos.find(p => p.id === res.value.id);
+                if (!prod) return;
+                if (res.value.cant > Number(prod.stock_vacios || 0)) return Swal.fire('Error', 'No hay suficientes vacíos en bodega.', 'warning');
+                let updated = { ...prod, stock_vacios: Math.max(0, Number(prod.stock_vacios || 0) - res.value.cant) };
+                if (await enviarPOST('saveProducto', { data: updated })) Toast.fire({ icon: 'success', title: 'Salida de vacíos registrada' });
+            }
         }
 
         async function crearClienteRapido() {
@@ -289,17 +343,31 @@
             container.innerHTML = html + '</ul>'; document.getElementById('pos-total-cobrar').innerText = formMoneda(total);
         }
 
+        // ================= PROCESAR PAGO CON SELECTOR DE VENDEDOR =================
         async function procesarPago() {
             if (carritoPOS.length === 0) return;
-            let html = `<select id="metodo-sel" class="swal-custom-input text-sm"><option value="Efectivo">Efectivo Físico</option><option value="Nequi">Nequi</option><option value="Transferencia">Transferencia Bancaria</option></select>`;
-            let { value: conf } = await Swal.fire({ title: 'COBRAR', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR Y CERRAR', confirmButtonColor: '#10b981' });
-            if (conf) {
-                let met = document.getElementById('metodo-sel').value; let t = document.getElementById('pos-total-cobrar').innerText.replace(/\D/g,''); let cliId = document.getElementById('pos-cliente').value; let cliName = document.getElementById('pos-cliente').options[document.getElementById('pos-cliente').selectedIndex].text;
+            let optsVend = `<option value="|Punto de Venta">Punto de Venta (Patio)</option>`;
+            db.repartidores.filter(r => r.activo === 'SI').forEach(r => { optsVend += `<option value="${r.id}|${r.nombre}">${r.nombre}</option>`; });
+
+            let html = `
+                <label class="swal-label">Vendedor</label>
+                <select id="vendedor-sel" class="swal-custom-input text-sm">${optsVend}</select>
+                <label class="swal-label">Método de Pago</label>
+                <select id="metodo-sel" class="swal-custom-input text-sm"><option value="Efectivo">Efectivo Físico</option><option value="Nequi">Nequi</option><option value="Transferencia">Transferencia Bancaria</option></select>`;
+            
+            let res = await Swal.fire({ 
+                title: 'COBRAR', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR Y CERRAR', confirmButtonColor: '#10b981',
+                preConfirm: () => ({ met: document.getElementById('metodo-sel').value, vend: document.getElementById('vendedor-sel').value })
+            });
+            if (res.isConfirmed) {
+                let met = res.value.met;
+                let [repId, repNom] = res.value.vend.split('|');
+                let t = document.getElementById('pos-total-cobrar').innerText.replace(/\D/g,''); let cliId = document.getElementById('pos-cliente').value; let cliName = document.getElementById('pos-cliente').options[document.getElementById('pos-cliente').selectedIndex].text;
                 let cli = db.clientes.find(c => c.id === cliId) || db.clientes[0];
                 let itemsFinales = carritoPOS.map(i => { let d = 0; if(i.producto_nombre.includes('100')) d = Number(cli.desc_100||0); if(i.producto_nombre.includes('40')) d = Number(cli.desc_40||0); if(i.producto_nombre.includes('30')) d = Number(cli.desc_30||0); return { ...i, precio: i.precio_base - d, cantidad: Number(i.cantidad) }; });
                 
                 let numRecibo = String(db.ventas.length + 1).padStart(4, '0');
-                let vta = { id: 'REC-' + numRecibo, fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, origen: 'POS', repartidor_id: '', repartidor_nombre: '', cliente_id: cliId, cliente_nombre: cliName, items_json: JSON.stringify(itemsFinales), subtotal: t, descuento: 0, total: t, metodo_pago: met, pago_efectivo: met==='Efectivo'?t:0, pago_nequi: met==='Nequi'?t:0, pago_transf: met==='Transferencia'?t:0, es_credito: 'NO' };
+                let vta = { id: 'REC-' + numRecibo, fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, origen: 'POS', repartidor_id: repId, repartidor_nombre: repId ? repNom : '', cliente_id: cliId, cliente_nombre: cliName, items_json: JSON.stringify(itemsFinales), subtotal: t, descuento: 0, total: t, metodo_pago: met, pago_efectivo: met==='Efectivo'?t:0, pago_nequi: met==='Nequi'?t:0, pago_transf: met==='Transferencia'?t:0, es_credito: 'NO' };
                 if(await enviarPOST('registrarVenta', { data: vta })) { 
                     imprimirTirilla(vta, itemsFinales); 
                     limpiarCarrito(); 
@@ -315,26 +383,30 @@
             vtas.forEach(v => {
                 let cl = db.clientes.find(c => c.id === v.cliente_id);
                 let tel = cl ? cl.telefono : '';
-                h += `<tr class="border-b hover:bg-slate-50"><td class="p-3 text-slate-500 font-bold">${formatHora(v.fecha_hora)}</td><td class="p-3 text-xs font-black text-[#1e3a8a]">${v.id.split('-')[1]}</td><td class="p-3 font-bold">${v.cliente_nombre.substring(0,15)}</td><td class="p-3 font-black">${formMoneda(v.total)}</td><td class="p-3 text-[10px] uppercase font-bold">${v.metodo_pago}</td><td class="p-3 text-center flex gap-1"><button onclick="verReciboFlotante('${v.id}', '${tel}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-xs font-bold"><i class="fas fa-file-invoice mr-1"></i> Opciones</button></td></tr>`;
+                let numRec = v.id ? (String(v.id).includes('-') ? String(v.id).split('-')[1] : String(v.id)) : 'S/N';
+                let nomCli = String(v.cliente_nombre || 'Mostrador').substring(0, 15);
+                let vend = v.repartidor_nombre ? v.repartidor_nombre.split(' ')[0] : 'Patio';
+                h += `<tr class="border-b hover:bg-slate-50"><td class="p-3 text-slate-500 font-bold">${formatHora(v.fecha_hora)}</td><td class="p-3 text-xs font-black text-[#1e3a8a]">${numRec}</td><td class="p-3 font-bold">${nomCli}</td><td class="p-3 text-xs font-bold text-slate-500">${vend}</td><td class="p-3 font-black">${formMoneda(v.total)}</td><td class="p-3 text-[10px] uppercase font-bold">${v.metodo_pago || ''}</td><td class="p-3 text-center flex gap-1"><button onclick="verReciboFlotante('${v.id || ''}', '${tel}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-xs font-bold"><i class="fas fa-file-invoice mr-1"></i> Opciones</button></td></tr>`;
             });
-            document.getElementById('lista-historial-facturas').innerHTML = h || '<tr><td colspan="6" class="p-5 text-center text-slate-400 font-bold">No hay recibos en este turno.</td></tr>';
+            document.getElementById('lista-historial-facturas').innerHTML = h || '<tr><td colspan="7" class="p-5 text-center text-slate-400 font-bold">No hay recibos en este turno.</td></tr>';
         }
 
         async function verReciboFlotante(idFac, tel) {
             let vta = db.ventas.find(v => v.id === idFac);
             if(!vta) return;
             let items = JSON.parse(vta.items_json||'[]');
+            let numRec = String(vta.id || '').includes('-') ? String(vta.id).split('-')[1] : String(vta.id || '');
             
             let htmlRecibo = `<div id="recibo-capture" class="bg-white p-6 border border-slate-200 shadow-sm text-left font-mono text-sm w-full mx-auto" style="max-width: 350px;">
                 <div class="text-center mb-4"><h3 class="font-black text-xl mb-1">GAS GUAINÍA MAF</h3><p class="text-xs">Nit: 19001956-1<br>Km 1 Vía Aeropuerto, Piedra de Caño Conejo<br>Tel: 3134701620</p></div>
-                <div class="border-t border-b border-dashed border-slate-300 py-2 mb-4"><p><strong>Fecha:</strong> ${vta.fecha_hora.split('T')[0]}</p><p><strong>Recibo de Compra:</strong> ${vta.id.split('-')[1]}</p><p><strong>Cliente:</strong> ${vta.cliente_nombre}</p></div>
+                <div class="border-t border-b border-dashed border-slate-300 py-2 mb-4"><p><strong>Fecha:</strong> ${String(vta.fecha_hora||'').split('T')[0]}</p><p><strong>Recibo de Compra:</strong> ${numRec}</p><p><strong>Cliente:</strong> ${vta.cliente_nombre}</p>${vta.repartidor_nombre ? `<p><strong>Vendedor:</strong> ${vta.repartidor_nombre}</p>` : ''}</div>
                 <div class="mb-4">`;
             
             items.forEach(i => { htmlRecibo += `<div class="flex justify-between"><span>${i.cantidad}x ${i.producto_nombre.substring(0,12)}</span><span>${formMoneda(i.precio)}</span></div>`; });
             
             htmlRecibo += `</div><div class="border-t border-dashed border-slate-300 pt-2"><div class="flex justify-between font-black text-lg"><span>TOTAL:</span><span>${formMoneda(vta.total)}</span></div><p class="text-xs mt-1">Pago: ${vta.metodo_pago}</p></div><div class="text-center mt-6 text-xs">Gracias por su compra.</div></div>`;
 
-            let btnW = tel && tel.length > 8 ? `<button onclick="window.open('https://api.whatsapp.com/send?phone=57${tel}&text=${encodeURIComponent(`*GAS GUAINÍA MAF*\nRecibo de compra: ${vta.id.split('-')[1]}\nFecha: ${vta.fecha_hora.split('T')[0]}\n\n*Total Pagado:* ${formMoneda(vta.total)}\nMétodo: ${vta.metodo_pago}\n\n_¡Gracias por tu compra!_`)}', '_blank')" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold w-full mb-2"><i class="fab fa-whatsapp mr-1"></i> Enviar por WhatsApp</button>` : '';
+            let btnW = tel && tel.length > 8 ? `<button onclick="window.open('https://api.whatsapp.com/send?phone=57${tel}&text=${encodeURIComponent(`*GAS GUAINÍA MAF*\nRecibo de compra: ${numRec}\nFecha: ${String(vta.fecha_hora||'').split('T')[0]}\n\n*Total Pagado:* ${formMoneda(vta.total)}\nMétodo: ${vta.metodo_pago}\n\n_¡Gracias por tu compra!_`)}', '_blank')" class="bg-[#25D366] text-white px-4 py-2 rounded-lg font-bold w-full mb-2"><i class="fab fa-whatsapp mr-1"></i> Enviar por WhatsApp</button>` : '';
 
             Swal.fire({ 
                 title: 'Opciones de Recibo', 
@@ -359,7 +431,6 @@
             }
         };
 
-        // FIX QUIRÚRGICO DE IMPRESIÓN (Manejo correcto del timeout para evitar pantalla en blanco)
         window.reimprimirFisico = (idFac) => {
             let vta = db.ventas.find(v => v.id === idFac);
             if(vta) { let items = JSON.parse(vta.items_json||'[]'); imprimirTirilla(vta, items); }
@@ -425,7 +496,7 @@
             }
         }
 
-        // ================= RUTAS Y LIQUIDACIÓN =================
+        // ================= RUTAS Y LIQUIDACIÓN (INCLUYE VENTAS POS ASIGNADAS) =================
         function renderControlRutas() {
             let navHtml = ''; let contentHtml = ''; let repsActivos = db.repartidores.filter(r => r.activo === 'SI');
             
@@ -439,12 +510,16 @@
             if(!repObj) return;
 
             let desp = db.despachos.find(d => d.repartidor_id === ruteroActivo && String(d.fecha).includes(cajaAbierta.fecha) && d.estado === 'EN CURSO');
-            
+            let vtasPOSRep = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha) && v.origen === 'POS' && v.repartidor_id === ruteroActivo);
+            let totalPOSRep = vtasPOSRep.reduce((a, b) => a + Number(b.total || 0), 0);
+
             if(!desp) {
-                contentHtml = `<div class="text-center w-full max-w-sm"><h3 class="font-black text-slate-700 text-lg mb-4">No hay ruta activa</h3><button onclick="asignarCargaInicial('${repObj.id}', '${repObj.nombre}')" class="bg-[#3b82f6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-black shadow-md w-full"><i class="fas fa-truck-loading mr-2"></i> ENTREGAR CARGA INICIAL</button></div>`;
+                let extraInfo = totalPOSRep > 0 ? `<p class="text-xs font-bold text-emerald-600 mb-4 bg-emerald-50 p-2 rounded border border-emerald-200">Ventas POS asignadas hoy: ${formMoneda(totalPOSRep)} (${vtasPOSRep.length} recibos)</p>` : '';
+                contentHtml = `<div class="text-center w-full max-w-sm"><h3 class="font-black text-slate-700 text-lg mb-2">No hay ruta activa</h3>${extraInfo}<button onclick="asignarCargaInicial('${repObj.id}', '${repObj.nombre}')" class="bg-[#3b82f6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-black shadow-md w-full"><i class="fas fa-truck-loading mr-2"></i> ENTREGAR CARGA INICIAL</button></div>`;
             } else {
                 let cIni = JSON.parse(desp.carga_inicial_json || '{}'); let cVac = JSON.parse(desp.vacios_devueltos_json || '{}');
-                contentHtml = `<div class="w-full max-w-2xl bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4"><h3 class="font-black text-[#1e3a8a]">INVENTARIO A CARGO</h3><span class="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">${repObj.nombre}</span></div><div class="grid grid-cols-3 gap-3 mb-6"><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">100 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['100']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['100']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">40 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['40']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['40']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">30 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['30']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['30']||0} Vacíos (Vend.)</p></div></div><div class="flex gap-3"><button onclick="recibirVacios('${desp.id}')" class="flex-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-black rounded-lg p-3 text-sm transition">1. RECIBIR VACÍOS Y RECARGAR</button><button onclick="liquidarRuta('${desp.id}')" class="flex-1 bg-[#3b82f6] hover:bg-blue-600 text-white font-black rounded-lg p-3 text-sm shadow-md transition">2. CERRAR RUTA Y FACTURAR</button></div></div>`;
+                let posBanner = totalPOSRep > 0 ? `<div class="mb-4 bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex justify-between items-center text-xs"><span class="font-bold text-emerald-800"><i class="fas fa-receipt mr-1"></i> Ventas POS asignadas a ${repObj.nombre.split(' ')[0]}:</span><span class="font-black text-emerald-700">${formMoneda(totalPOSRep)} (${vtasPOSRep.length})</span></div>` : '';
+                contentHtml = `<div class="w-full max-w-2xl bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4"><h3 class="font-black text-[#1e3a8a]">INVENTARIO A CARGO</h3><span class="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">${repObj.nombre}</span></div>${posBanner}<div class="grid grid-cols-3 gap-3 mb-6"><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">100 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['100']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['100']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">40 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['40']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['40']||0} Vacíos (Vend.)</p></div><div class="bg-slate-50 border border-slate-100 p-3 rounded-lg text-center"><p class="text-[10px] font-black text-slate-400 mb-1">30 LIBRAS</p><p class="text-xl font-black text-slate-700">${cIni['30']||0} L</p><p class="text-xs font-bold text-rose-500 mt-1">${cVac['30']||0} Vacíos (Vend.)</p></div></div><div class="flex gap-3"><button onclick="recibirVacios('${desp.id}')" class="flex-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-black rounded-lg p-3 text-sm transition">1. RECIBIR VACÍOS Y RECARGAR</button><button onclick="liquidarRuta('${desp.id}')" class="flex-1 bg-[#3b82f6] hover:bg-blue-600 text-white font-black rounded-lg p-3 text-sm shadow-md transition">2. CERRAR RUTA Y FACTURAR</button></div></div>`;
             }
             document.getElementById('rutas-tabs-content').innerHTML = contentHtml;
         }
@@ -480,9 +555,14 @@
             let p100 = p100Obj ? p100Obj.precio_venta : 0; let p40 = p40Obj ? p40Obj.precio_venta : 0; let p30 = p30Obj ? p30Obj.precio_venta : 0;
             let t100 = (cVac["100"]||0) * p100; let t40 = (cVac["40"]||0) * p40; let t30 = (cVac["30"]||0) * p30; let total = t100 + t40 + t30;
 
-            let html = `<div class="bg-indigo-50 p-4 rounded-lg mb-4 text-center border border-indigo-100"><p class="text-xs font-black text-indigo-500 uppercase">Total Facturado</p><p class="text-3xl font-black text-indigo-800" id="liq-tot">${formMoneda(total)}</p></div><div class="grid grid-cols-2 gap-2"><div class="text-left"><label class="swal-label">EFECTIVO FÍSICO A CAJA</label><input id="liq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#10b981]" value="${total}"></div><div class="text-left"><label class="swal-label">TRANSFERENCIA/NEQUI</label><input id="liq-tr" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#3b82f6]" value="0"></div></div>`;
+            // Ventas POS asignadas a este repartidor hoy
+            let vtasPOSRep = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha) && v.origen === 'POS' && v.repartidor_id === desp.repartidor_id);
+            let totalPOSRep = vtasPOSRep.reduce((a, b) => a + Number(b.total || 0), 0);
+            let posInfoHtml = totalPOSRep > 0 ? `<div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg mb-3 text-xs font-bold text-emerald-800">Ventas POS asignadas: ${formMoneda(totalPOSRep)} (${vtasPOSRep.length} recibos) • Total Consolidado Repartidor: ${formMoneda(total + totalPOSRep)}</div>` : '';
+
+            let html = `${posInfoHtml}<div class="bg-indigo-50 p-4 rounded-lg mb-4 text-center border border-indigo-100"><p class="text-xs font-black text-indigo-500 uppercase">Total Ruta (Vacíos a Liquidar)</p><p class="text-3xl font-black text-indigo-800" id="liq-tot">${formMoneda(total)}</p></div><div class="grid grid-cols-2 gap-2"><div class="text-left"><label class="swal-label">EFECTIVO FÍSICO A CAJA</label><input id="liq-ef" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#10b981]" value="${total}"></div><div class="text-left"><label class="swal-label">TRANSFERENCIA/NEQUI</label><input id="liq-tr" type="number" class="swal-custom-input p-2 m-0 mt-1 text-xl font-black text-[#3b82f6]" value="0"></div></div>`;
             
-            let res = await Swal.fire({ title: 'LIQUIDACIÓN FINAL', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR E IMPRIMIR', confirmButtonColor: '#3b82f6', preConfirm: () => { let e = Number(document.getElementById('liq-ef').value); let t = Number(document.getElementById('liq-tr').value); if(e+t !== total) { Swal.showValidationMessage('La suma debe ser exacta al Total Facturado.'); return false; } return { ef: e, tr: t }; } });
+            let res = await Swal.fire({ title: 'LIQUIDACIÓN FINAL', html: html, showCancelButton: true, confirmButtonText: 'FACTURAR E IMPRIMIR', confirmButtonColor: '#3b82f6', preConfirm: () => { let e = Number(document.getElementById('liq-ef').value); let t = Number(document.getElementById('liq-tr').value); if(e+t !== total) { Swal.showValidationMessage('La suma debe ser exacta al Total Ruta.'); return false; } return { ef: e, tr: t }; } });
             
             if(res.isConfirmed) {
                 let ef = res.value.ef; let tr = res.value.tr;
@@ -497,9 +577,17 @@
                 
                 if(await enviarPOST('saveDespacho', { data: dataDespacho })) {
                     if(total > 0) await enviarPOST('registrarVenta', { data: dataVenta });
+
+                    let filasPOSRep = '';
+                    if (vtasPOSRep.length > 0) {
+                        filasPOSRep = `<h4 style="margin-top:15px; margin-bottom:5px;">Ventas Facturadas en POS (Asignadas al Repartidor)</h4><table style="width:100%; border-collapse:collapse; font-family:sans-serif; margin-bottom:20px;"><tr style="background:#eee;"><th style="padding:6px; border:1px solid #ccc;">Recibo</th><th style="padding:6px; border:1px solid #ccc;">Cliente</th><th style="padding:6px; border:1px solid #ccc;">Pago</th><th style="padding:6px; border:1px solid #ccc;">Total</th></tr>`;
+                        vtasPOSRep.forEach(vp => {
+                            filasPOSRep += `<tr><td style="padding:6px; border:1px solid #ccc;">${vp.id}</td><td style="padding:6px; border:1px solid #ccc;">${vp.cliente_nombre}</td><td style="padding:6px; border:1px solid #ccc;">${vp.metodo_pago}</td><td style="text-align:right; padding:6px; border:1px solid #ccc;">${formMoneda(vp.total)}</td></tr>`;
+                        });
+                        filasPOSRep += `<tr><th colspan="3" style="text-align:right; padding:6px; border:1px solid #ccc;">Total POS Asignado:</th><th style="text-align:right; padding:6px; border:1px solid #ccc;">${formMoneda(totalPOSRep)}</th></tr></table>`;
+                    }
                     
-                    // FIX QUIRÚRGICO DE IMPRESIÓN (Carta)
-                    let linesCarta = `<div style="text-align:center; font-family:sans-serif; margin-bottom:20px;"><h2>GAS GUAINÍA MAF</h2><p>Nit: 19001956-1<br>Km 1 Vía Aeropuerto, Piedra de Caño Conejo</p><h3 style="margin-top:20px; border-bottom:1px solid #000; display:inline-block;">RECIBO DE VENTA (Ruta)</h3></div><table style="width:100%; border-collapse:collapse; font-family:sans-serif; margin-bottom:20px;"><tr style="background:#eee;"><th style="padding:8px; border:1px solid #ccc;">Ref</th><th style="padding:8px; border:1px solid #ccc;">Vendidos</th><th style="padding:8px; border:1px solid #ccc;">Total</th></tr><tr><td style="padding:8px; border:1px solid #ccc;">100lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["100"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t100)}</td></tr><tr><td style="padding:8px; border:1px solid #ccc;">40lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["40"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t40)}</td></tr><tr><td style="padding:8px; border:1px solid #ccc;">30lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["30"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t30)}</td></tr><tr><th colspan="2" style="text-align:right; padding:8px; border:1px solid #ccc;">Total General:</th><th style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(total)}</th></tr></table><div style="font-family:sans-serif; margin-bottom: 20px;"><p><b>Repartidor:</b> ${desp.repartidor_nombre}<br><b>Fecha:</b> ${desp.fecha}</p><p><b>Efectivo a Caja:</b> ${formMoneda(ef)}<br><b>Bancos Reportados:</b> ${formMoneda(tr)}</p></div><div style="display:flex; justify-content:space-between; margin-top:60px; font-family:sans-serif;"><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Liquidador</div><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Repartidor</div></div>`;
+                    let linesCarta = `<div style="text-align:center; font-family:sans-serif; margin-bottom:20px;"><h2>GAS GUAINÍA MAF</h2><p>Nit: 19001956-1<br>Km 1 Vía Aeropuerto, Piedra de Caño Conejo</p><h3 style="margin-top:20px; border-bottom:1px solid #000; display:inline-block;">RECIBO DE VENTA (Ruta)</h3></div><table style="width:100%; border-collapse:collapse; font-family:sans-serif; margin-bottom:20px;"><tr style="background:#eee;"><th style="padding:8px; border:1px solid #ccc;">Ref</th><th style="padding:8px; border:1px solid #ccc;">Vendidos</th><th style="padding:8px; border:1px solid #ccc;">Total</th></tr><tr><td style="padding:8px; border:1px solid #ccc;">100lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["100"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t100)}</td></tr><tr><td style="padding:8px; border:1px solid #ccc;">40lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["40"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t40)}</td></tr><tr><td style="padding:8px; border:1px solid #ccc;">30lb</td><td style="text-align:center; padding:8px; border:1px solid #ccc;">${cVac["30"]||0}</td><td style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(t30)}</td></tr><tr><th colspan="2" style="text-align:right; padding:8px; border:1px solid #ccc;">Total Ruta (Vacíos):</th><th style="text-align:right; padding:8px; border:1px solid #ccc;">${formMoneda(total)}</th></tr></table>${filasPOSRep}<div style="font-family:sans-serif; margin-bottom: 20px;"><p><b>Repartidor:</b> ${desp.repartidor_nombre}<br><b>Fecha:</b> ${desp.fecha}</p><p><b>Efectivo a Caja (Ruta):</b> ${formMoneda(ef)}<br><b>Bancos Reportados (Ruta):</b> ${formMoneda(tr)}<br><b>Total Consolidado Repartidor (Ruta + POS):</b> ${formMoneda(total + totalPOSRep)}</p></div><div style="display:flex; justify-content:space-between; margin-top:60px; font-family:sans-serif;"><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Liquidador</div><div style="width:45%; text-align:center; border-top:1px solid #000; padding-top:10px;">Firma Repartidor</div></div>`;
                     document.getElementById('letter-area').innerHTML = linesCarta; 
                     document.body.classList.add('print-letter'); 
                     setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('print-letter'), 1000); }, 200);
@@ -507,10 +595,183 @@
             }
         }
 
+        // ================= PRÉSTAMOS / CLIENTES ESPECIALES =================
+        function renderPrestamos() {
+            let lista = (db.creditos || []).filter(c => c.estado !== 'LIQUIDADO' && c.estado !== 'DEVUELTO');
+            let html = '';
+            lista.forEach(c => {
+                let esLleno = String(c.tipo_credito).toUpperCase() === 'LLENO';
+                let badge = esLleno ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800';
+                let acciones = esLleno
+                    ? `<button onclick="abonarPrestamo('${c.id}')" class="flex-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold py-1.5 rounded hover:bg-blue-100">Abonar</button>
+                       <button onclick="liquidarPrestamo('${c.id}')" class="flex-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold py-1.5 rounded hover:bg-emerald-100">Liquidar</button>
+                       <button onclick="devolverPrestamo('${c.id}')" class="flex-1 bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold py-1.5 rounded hover:bg-slate-200">Devuelto</button>`
+                    : `<button onclick="devolverPrestamo('${c.id}')" class="w-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold py-2 rounded hover:bg-amber-100"><i class="fas fa-undo mr-1"></i> Registrar Devolución Vacíos</button>`;
+
+                html += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-black text-sm text-[#1e3a8a]">${c.cliente_nombre}</h3>
+                        <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase ${badge}">${c.tipo_credito}</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-600 mb-1">${c.producto_nombre}</p>
+                    <p class="text-xs text-slate-500 mb-2">Pendientes: <b class="text-slate-800">${c.cantidad_pendiente}</b> de ${c.cantidad_inicial} | Fecha: ${String(c.fecha_registro||'').split(' ')[0]}</p>
+                    ${esLleno ? `<p class="text-sm font-black text-rose-600 mb-3">Saldo: ${formMoneda(c.saldo_dinero)}</p>` : `<p class="text-xs font-bold text-amber-600 mb-3">Préstamo de envase (sin saldo $)</p>`}
+                    <div class="flex gap-1.5 mt-auto">${acciones}</div>
+                </div>`;
+            });
+            document.getElementById('lista-prestamos').innerHTML = html || '<div class="col-span-full text-center text-slate-400 text-sm mt-10">No hay préstamos activos.</div>';
+        }
+
+        async function nuevoPrestamo() {
+            let optsCli = db.clientes.filter(c => c.id !== 'CLI-00').map(c => `<option value="${c.id}|${c.nombre}">${c.nombre}</option>`).join('');
+            let optsProd = db.productos.filter(p => p.activo === 'SI').map(p => `<option value="${p.id}|${p.nombre}|${p.precio_venta}">${p.nombre}</option>`).join('');
+            let html = `<div class="text-left">
+                <label class="swal-label">Cliente</label><select id="pr-cli" class="swal-custom-input p-2 text-sm">${optsCli}</select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="swal-label">Tipo</label><select id="pr-tipo" class="swal-custom-input p-2 text-sm"><option value="LLENO">Cilindro LLENO</option><option value="VACIO">Cilindro VACÍO</option></select></div>
+                    <div><label class="swal-label">Cantidad</label><input id="pr-cant" type="number" class="swal-custom-input p-2 text-sm" value="1" min="1"></div>
+                </div>
+                <label class="swal-label">Producto</label><select id="pr-prod" class="swal-custom-input p-2 text-sm">${optsProd}</select>
+            </div>`;
+
+            let res = await Swal.fire({
+                title: 'NUEVO PRÉSTAMO', html: html, showCancelButton: true, confirmButtonText: 'REGISTRAR', confirmButtonColor: '#3b82f6',
+                preConfirm: () => ({ cli: document.getElementById('pr-cli').value, tipo: document.getElementById('pr-tipo').value, cant: Number(document.getElementById('pr-cant').value||0), prod: document.getElementById('pr-prod').value })
+            });
+            if (res.isConfirmed && res.value.cant > 0) {
+                let [cliId, cliNom] = res.value.cli.split('|');
+                let [prodId, prodNom, prodPrecio] = res.value.prod.split('|');
+                let esLleno = res.value.tipo === 'LLENO';
+                let valUnit = esLleno ? Number(prodPrecio) : 0;
+                let data = {
+                    id: 'CRD-' + Date.now(), cliente_id: cliId, cliente_nombre: cliNom, tipo_credito: res.value.tipo,
+                    producto_nombre: prodNom, cantidad_inicial: res.value.cant, cantidad_pendiente: res.value.cant,
+                    valor_unitario: valUnit, saldo_dinero: valUnit * res.value.cant, fecha_registro: cajaAbierta.fecha,
+                    historial_abonos_json: '[]', estado: 'ACTIVO'
+                };
+                if (await enviarPOST('saveCreditoEspecial', { data: data })) {
+                    // Descontar de bodega el cilindro prestado
+                    let prod = db.productos.find(p => p.id === prodId);
+                    if (prod) {
+                        let upd = { ...prod };
+                        if (esLleno) upd.stock_llenos = Math.max(0, Number(prod.stock_llenos || 0) - res.value.cant);
+                        else upd.stock_vacios = Math.max(0, Number(prod.stock_vacios || 0) - res.value.cant);
+                        await enviarPOST('saveProducto', { data: upd });
+                    }
+                }
+            }
+        }
+
+        async function abonarPrestamo(id) {
+            let c = db.creditos.find(x => x.id === id); if (!c) return;
+            let res = await Swal.fire({
+                title: 'ABONAR A PRÉSTAMO',
+                html: `<p class="text-xs font-bold text-slate-500 mb-2">${c.cliente_nombre} • Saldo actual: ${formMoneda(c.saldo_dinero)}</p><input id="ab-monto" type="number" class="swal-custom-input text-2xl text-center" placeholder="Monto a abonar $">`,
+                showCancelButton: true, confirmButtonText: 'GUARDAR ABONO', confirmButtonColor: '#2563eb',
+                preConfirm: () => Number(document.getElementById('ab-monto').value || 0)
+            });
+            if (res.isConfirmed && res.value > 0) {
+                let hist = JSON.parse(c.historial_abonos_json || '[]');
+                hist.push({ fecha: cajaAbierta.fecha, monto: res.value });
+                let nuevoSaldo = Math.max(0, Number(c.saldo_dinero) - res.value);
+                let data = { ...c, saldo_dinero: nuevoSaldo, historial_abonos_json: JSON.stringify(hist), estado: nuevoSaldo === 0 ? 'LIQUIDADO' : 'ACTIVO' };
+                enviarPOST('saveCreditoEspecial', { data: data });
+            }
+        }
+
+        async function liquidarPrestamo(id) {
+            let c = db.creditos.find(x => x.id === id); if (!c) return;
+            let conf = await Swal.fire({ title: '¿Liquidar Préstamo?', text: `Se marcará pagado el saldo de ${formMoneda(c.saldo_dinero)} de ${c.cliente_nombre}.`, showCancelButton: true, confirmButtonText: 'Sí, Liquidar', confirmButtonColor: '#10b981' });
+            if (conf.isConfirmed) {
+                let hist = JSON.parse(c.historial_abonos_json || '[]');
+                hist.push({ fecha: cajaAbierta.fecha, monto: Number(c.saldo_dinero), tipo: 'LIQUIDACION' });
+                let data = { ...c, saldo_dinero: 0, cantidad_pendiente: 0, historial_abonos_json: JSON.stringify(hist), estado: 'LIQUIDADO' };
+                enviarPOST('saveCreditoEspecial', { data: data });
+            }
+        }
+
+        async function devolverPrestamo(id) {
+            let c = db.creditos.find(x => x.id === id); if (!c) return;
+            let res = await Swal.fire({
+                title: `DEVOLUCIÓN (${c.tipo_credito})`,
+                html: `<p class="text-xs font-bold text-slate-500 mb-2">${c.cliente_nombre} • Pendientes: ${c.cantidad_pendiente}</p><label class="swal-label text-center">¿Cuántos devuelve hoy?</label><input id="dev-cant" type="number" class="swal-custom-input text-2xl text-center" value="${c.cantidad_pendiente}" min="1" max="${c.cantidad_pendiente}">`,
+                showCancelButton: true, confirmButtonText: 'CONFIRMAR INGRESO A BODEGA', confirmButtonColor: '#d97706',
+                preConfirm: () => Number(document.getElementById('dev-cant').value || 0)
+            });
+            if (res.isConfirmed && res.value > 0) {
+                let cantDev = Math.min(res.value, Number(c.cantidad_pendiente));
+                let nuevaPend = Number(c.cantidad_pendiente) - cantDev;
+                let nuevoSaldo = String(c.tipo_credito).toUpperCase() === 'LLENO' ? Math.max(0, Number(c.saldo_dinero) - (cantDev * Number(c.valor_unitario || 0))) : 0;
+                let data = { ...c, cantidad_pendiente: nuevaPend, saldo_dinero: nuevoSaldo, estado: nuevaPend === 0 ? 'DEVUELTO' : 'ACTIVO' };
+                if (await enviarPOST('saveCreditoEspecial', { data: data })) {
+                    // Reingresar automáticamente a inventario de bodega
+                    let prod = db.productos.find(p => p.nombre === c.producto_nombre);
+                    if (prod) {
+                        let upd = { ...prod };
+                        if (String(c.tipo_credito).toUpperCase() === 'LLENO') upd.stock_llenos = Number(prod.stock_llenos || 0) + cantDev;
+                        else upd.stock_vacios = Number(prod.stock_vacios || 0) + cantDev;
+                        await enviarPOST('saveProducto', { data: upd });
+                    }
+                }
+            }
+        }
+
+        // ================= HISTORIAL DE CIERRES DE CAJA =================
+        function renderCierres() {
+            let lista = (db.cierres || []).slice().sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+            let h = '';
+            lista.forEach(c => {
+                let f = String(c.fecha || '').split(' ')[0];
+                let bancos = Number(c.contado_nequi || 0) + Number(c.contado_transf || 0);
+                h += `<tr class="border-b hover:bg-slate-50"><td class="p-3 font-bold text-slate-700">${f}</td><td class="p-3 text-xs font-bold text-slate-500">${c.usuario || ''}</td><td class="p-3 font-bold">${formMoneda(c.base_inicial)}</td><td class="p-3 font-black text-emerald-700">${formMoneda(c.contado_efectivo)}</td><td class="p-3 font-black text-blue-700">${formMoneda(bancos)}</td><td class="p-3 text-center"><button onclick="verCierreTicket('${c.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-xs font-bold"><i class="fas fa-receipt mr-1"></i> Ver / Imprimir</button></td></tr>`;
+            });
+            document.getElementById('lista-cierres-caja').innerHTML = h || '<tr><td colspan="6" class="p-5 text-center text-slate-400 font-bold">No hay cierres registrados.</td></tr>';
+        }
+
+        function construirTextoCierre(c) {
+            let f = String(c.fecha || '').split(' ')[0];
+            let bancos = Number(c.contado_nequi || 0) + Number(c.contado_transf || 0);
+            // Desglose de ventas por repartidor para esa fecha
+            let vtasDia = db.ventas.filter(v => String(v.fecha).includes(f));
+            let desgloseRep = {};
+            vtasDia.forEach(v => {
+                let key = v.repartidor_nombre || 'Punto de Venta (Patio)';
+                desgloseRep[key] = (desgloseRep[key] || 0) + Number(v.total || 0);
+            });
+            let txtRep = Object.keys(desgloseRep).map(k => `${k.substring(0, 16)}: ${formMoneda(desgloseRep[k])}`).join('\n');
+
+            return `GAS GUAINIA MAF\nNit: 19001956-1\nKm 1 Vía Aeropuerto\n--------------------------------\nCIERRE DIARIO DE CAJA POS\n--------------------------------\nFecha: ${f}\nCajero: ${String(c.usuario||'').substring(0,14)}\n--------------------------------\nVENTAS POR VENDEDOR\n${txtRep || 'Sin ventas'}\n--------------------------------\nRESUMEN FINANCIERO\nBase Inicial: ${formMoneda(c.base_inicial)}\nVentas Patio Ef: ${formMoneda(c.ventas_patio_ef)}\nLiq Rutas Ef: ${formMoneda(c.liq_repartidores_ef)}\nVales de Caja: -${formMoneda(c.gastos_caja_ef)}\n\nTOTAL CAJON: ${formMoneda(c.contado_efectivo)}\nTOTAL BANCOS: ${formMoneda(bancos)}\n--------------------------------\n¡Cierre Cuadrado Exitosamente!\n.`;
+        }
+
+        window.verCierreTicket = (idCie) => {
+            let c = (db.cierres || []).find(x => x.id === idCie);
+            if (!c) return;
+            let texto = construirTextoCierre(c);
+            let htmlPreview = `<pre id="cierre-capture" class="bg-white p-4 border border-slate-200 text-left font-mono text-xs whitespace-pre-wrap mx-auto" style="max-width:340px;">${texto}</pre>
+                <div class="mt-4 flex flex-col gap-2">
+                    <button onclick="descargarImagenCierre('${c.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold w-full"><i class="fas fa-image mr-1"></i> Descargar Imagen (PNG)</button>
+                    <button onclick="imprimirCierreGuardado('${c.id}')" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold w-full"><i class="fas fa-print mr-1"></i> Imprimir en Térmica</button>
+                </div>`;
+            Swal.fire({ title: 'Ticket de Cierre', html: htmlPreview, showConfirmButton: false, showCloseButton: true });
+        };
+
+        window.descargarImagenCierre = (idCie) => {
+            let div = document.getElementById('cierre-capture');
+            if (div) html2canvas(div, { scale: 2 }).then(canvas => { let l = document.createElement('a'); l.download = `Cierre_GasGuainia_${idCie}.png`; l.href = canvas.toDataURL('image/png'); l.click(); });
+        };
+
+        window.imprimirCierreGuardado = (idCie) => {
+            let c = (db.cierres || []).find(x => x.id === idCie); if (!c) return;
+            document.getElementById('ticket-area').innerText = construirTextoCierre(c);
+            document.body.classList.add('print-ticket');
+            setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('print-ticket'), 1000); }, 200);
+        };
+
         function renderAlertas() { let h=''; let hoy=new Date(); db.clientes.forEach(c => { if(c.oculto_alerta==='SI'||!c.ultima_compra)return; let dF = Number(c.ciclo_dias)-Math.floor((hoy-new Date(c.ultima_compra))/(1000*60*60*24)); if(dF<=3 && dF>=-10) h+=`<tr class="border-b"><td class="py-2 font-bold">${c.nombre}</td><td>${c.telefono}</td><td>${c.ultima_compra.split('T')[0]}</td><td class="font-bold text-orange-500">Faltan ${dF}d</td></tr>`; }); document.getElementById('lista-alertas').innerHTML = h||'<tr><td colspan="4" class="text-center py-4 text-slate-400">Sin alertas.</td></tr>'; }
         function renderGastosCaja() { let h = ''; db.gastos.filter(g => String(g.fecha).includes(cajaAbierta.fecha) && g.origen === 'POS').forEach(g => { h += `<li class="p-3 flex justify-between bg-slate-50 rounded border border-slate-100"><span class="font-bold text-sm">${g.concepto}</span><span class="text-rose-600 font-black">-${formMoneda(g.monto)}</span></li>`; }); document.getElementById('lista-gastos-caja').innerHTML = h || '<li class="p-4 text-slate-400 text-center text-sm">Sin retiros registrados.</li>'; }
         async function registrarGastoCaja() { let res = await Swal.fire({ title: 'Retiro de Caja', html: `<input id="val-con" class="swal-custom-input p-2 text-sm m-0 mt-2" placeholder="Motivo del vale"><input id="val-mon" type="number" class="swal-custom-input p-2 m-0 mt-2 text-xl text-rose-600 font-black" placeholder="Monto $">`, showCancelButton: true, confirmButtonText: 'RETIRAR', confirmButtonColor: '#f43f5e', preConfirm: () => { return { c: document.getElementById('val-con').value, m: document.getElementById('val-mon').value } } }); if(res.isConfirmed) { let c = res.value.c; let m = res.value.m; if(c&&m) enviarPOST('saveGasto', { data: { id: 'GAS-' + Date.now(), fecha: cajaAbierta.fecha, tipo_gasto: 'IMPREVISTO', origen: 'POS', concepto: c, monto: m } }); } }
 
+        // ================= ARQUEO DE CAJA (CON DESGLOSE POR REPARTIDOR) =================
         async function arqueoDeCaja() {
             let vtasPOS = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha) && v.origen === 'POS' && v.es_credito !== 'SI');
             let tEfPOS = 0, tNqPOS = 0, tTrPOS = 0; 
@@ -528,6 +789,16 @@
                 let v = JSON.parse(l.vacios_devueltos_json||'{}');
                 c100R += Number(v['100']||0); c40R += Number(v['40']||0); c30R += Number(v['30']||0);
             });
+
+            // Desglose por vendedor (Patio + cada repartidor)
+            let vtasDia = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha));
+            let porVendedor = {};
+            vtasDia.forEach(v => {
+                let k = v.repartidor_nombre || 'Punto de Venta (Patio)';
+                porVendedor[k] = (porVendedor[k] || 0) + Number(v.total || 0);
+            });
+            let htmlVend = Object.keys(porVendedor).map(k => `<div class="flex justify-between text-xs"><span>${k}:</span><span class="font-black text-slate-700">${formMoneda(porVendedor[k])}</span></div>`).join('');
+            let txtVend = Object.keys(porVendedor).map(k => `${k.substring(0, 16)}: ${formMoneda(porVendedor[k])}`).join('\n');
             
             let gCaja = db.gastos.filter(g => String(g.fecha).includes(cajaAbierta.fecha) && g.origen === 'POS').reduce((a,b)=>a+Number(b.monto), 0);
             
@@ -539,8 +810,8 @@
                     <div class="flex justify-between mb-2 border-b pb-1"><span>Base Inicial:</span><span class="text-slate-800">${formMoneda(cajaAbierta.base)}</span></div>
                     <div class="flex justify-between mb-2 border-b pb-1"><span>Ventas Patio (Ef):</span><span class="text-[#10b981]">+${formMoneda(tEfPOS)}</span></div>
                     <div class="flex justify-between mb-2 border-b pb-1"><span>Liq. Rep (Ef):</span><span class="text-[#10b981]">+${formMoneda(tEfRep)}</span></div>
-                    <div class="flex justify-between mb-4 border-b pb-1"><span>Vales / Retiros:</span><span class="text-rose-500">-${formMoneda(gCaja)}</span></div>
-                    
+                    <div class="flex justify-between mb-3 border-b pb-1"><span>Vales / Retiros:</span><span class="text-rose-500">-${formMoneda(gCaja)}</span></div>
+                    ${htmlVend ? `<div class="bg-slate-50 p-2 rounded mb-3 border border-slate-100"><p class="text-[10px] font-black uppercase text-slate-400 mb-1">Ventas por Vendedor</p>${htmlVend}</div>` : ''}
                     <div class="border-2 border-[#10b981] rounded-lg p-3 text-center mb-2">
                         <span class="text-[10px] text-[#10b981] font-black uppercase tracking-widest block mb-1">Efectivo Físico Esperado</span>
                         <span class="text-2xl font-black text-slate-800">${formMoneda(esperadoEf)}</span>
@@ -576,9 +847,7 @@
                 let data = { id: 'CIE-' + Date.now(), fecha_hora: new Date().toISOString(), fecha: cajaAbierta.fecha, usuario: sesionActiva.nombre, base_inicial: cajaAbierta.base, ventas_patio_ef: tEfPOS, liq_repartidores_ef: tEfRep, abonos_cartera_ef: 0, ingresos_extra_ef: 0, gastos_caja_ef: gCaja, esperado_efectivo: esperadoEf, contado_efectivo: esperadoEf, esperado_nequi: tNqPOS, contado_nequi: tNqPOS, esperado_transf: (tTrPOS + tTrRep), contado_transf: (tTrPOS + tTrRep), diferencia_total: 0 };
                 
                 if(await enviarPOST('saveCierreCaja', { data: data })) { 
-                    
-                    // FIX QUIRÚRGICO DE IMPRESIÓN (Térmica de Arqueo)
-                    let printText = `GAS GUAINIA MAF\nNit: 19001956-1\nKm 1 Vía Aeropuerto\n--------------------------------\nCIERRE DIARIO DE CAJA POS\n--------------------------------\nFecha: ${cajaAbierta.fecha}\nCajero: ${sesionActiva.nombre.substring(0,10)}\n--------------------------------\nVENTAS TOTALES (Patio + Ruta)\n100 Lb: ${c100P + c100R} unds\n40 Lb: ${c40P + c40R} unds\n30 Lb: ${c30P + c30R} unds\n--------------------------------\nRESUMEN FINANCIERO\nBase Inicial: ${formMoneda(cajaAbierta.base)}\nVentas Patio Ef: ${formMoneda(tEfPOS)}\nLiq Rutas Ef: ${formMoneda(tEfRep)}\nVales de Caja: -${formMoneda(gCaja)}\n\nTOTAL CAJON: ${formMoneda(esperadoEf)}\n\nTOTAL BANCOS: ${formMoneda(esperadoBn)}\n--------------------------------\n¡Cierre Cuadrado Exitosamente!\n.`;
+                    let printText = `GAS GUAINIA MAF\nNit: 19001956-1\nKm 1 Vía Aeropuerto\n--------------------------------\nCIERRE DIARIO DE CAJA POS\n--------------------------------\nFecha: ${cajaAbierta.fecha}\nCajero: ${sesionActiva.nombre.substring(0,10)}\n--------------------------------\nVENTAS TOTALES (Patio + Ruta)\n100 Lb: ${c100P + c100R} unds\n40 Lb: ${c40P + c40R} unds\n30 Lb: ${c30P + c30R} unds\n--------------------------------\nVENTAS POR VENDEDOR\n${txtVend || 'Sin ventas'}\n--------------------------------\nRESUMEN FINANCIERO\nBase Inicial: ${formMoneda(cajaAbierta.base)}\nVentas Patio Ef: ${formMoneda(tEfPOS)}\nLiq Rutas Ef: ${formMoneda(tEfRep)}\nVales de Caja: -${formMoneda(gCaja)}\n\nTOTAL CAJON: ${formMoneda(esperadoEf)}\n\nTOTAL BANCOS: ${formMoneda(esperadoBn)}\n--------------------------------\n¡Cierre Cuadrado Exitosamente!\n.`;
                     
                     document.getElementById('ticket-area').innerText = printText; 
                     document.body.classList.add('print-ticket'); 
@@ -595,9 +864,9 @@
             }
         }
 
-        // FIX QUIRÚRGICO DE IMPRESIÓN (Térmica de Venta)
         function imprimirTirilla(venta, items) {
-            let lines = `GAS GUAINIA MAF\nNit: 19001956-1\nKm 1 Vía Aeropuerto, Piedra de Caño Conejo\nTel: 3134701620\n--------------------------------\nFecha: ${venta.fecha_hora.split('T')[0]}\nRecibo de Compra: ${venta.id.split('-')[1]}\nCajero: ${sesionActiva.nombre.substring(0,10)}\nCliente: ${venta.cliente_nombre.substring(0,15)}\n--------------------------------\n`;
+            let numRec = String(venta.id || '').includes('-') ? String(venta.id).split('-')[1] : String(venta.id || '');
+            let lines = `GAS GUAINIA MAF\nNit: 19001956-1\nKm 1 Vía Aeropuerto, Piedra de Caño Conejo\nTel: 3134701620\n--------------------------------\nFecha: ${venta.fecha_hora.split('T')[0]}\nRecibo de Compra: ${numRec}\nCajero: ${sesionActiva.nombre.substring(0,10)}\nCliente: ${venta.cliente_nombre.substring(0,15)}\n${venta.repartidor_nombre ? `Vendedor: ${venta.repartidor_nombre.substring(0,14)}\n` : ''}--------------------------------\n`;
             items.forEach(i => { lines += `${i.cantidad}x ${i.producto_nombre.substring(0,12)} $${i.precio}\n`; });
             lines += `--------------------------------\nTOTAL: ${formMoneda(venta.total)}\nPago: ${venta.metodo_pago}\n\nGracias por su compra.\n\n\n.`;
             document.getElementById('ticket-area').innerText = lines; 
