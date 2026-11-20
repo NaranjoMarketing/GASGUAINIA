@@ -308,17 +308,33 @@
         // ================= SALIDA DE CILINDROS VACÍOS =================
         async function salidaVacios() {
             let optsProd = db.productos.filter(p => p.activo === 'SI').map(p => `<option value="${p.id}">${p.nombre} (Vacíos: ${p.stock_vacios || 0})</option>`).join('');
-            let html = `<div class="text-left"><label class="swal-label">Cilindro</label><select id="sv-prod" class="swal-custom-input p-2 text-sm">${optsProd}</select><label class="swal-label">Cantidad Vacíos que Salen</label><input id="sv-cant" type="number" class="swal-custom-input p-2 text-xl text-center" value="1" min="1"></div>`;
+            let html = `<div class="text-left">
+                <label class="swal-label">Cilindro</label>
+                <select id="sv-prod" class="swal-custom-input p-2 text-sm">${optsProd}</select>
+                <label class="swal-label">Cantidad Vacíos que Salen</label>
+                <input id="sv-cant" type="number" class="swal-custom-input p-2 text-xl text-center" value="1" min="1">
+                <label class="swal-label">Observación / Destino</label>
+                <input id="sv-obs" type="text" class="swal-custom-input p-2 text-sm" placeholder="Ej: Remesa a planta / Envío fluvial">
+            </div>`;
             let res = await Swal.fire({
-                title: 'SALIDA DE VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'DESCONTAR VACÍOS', confirmButtonColor: '#d97706',
-                preConfirm: () => ({ id: document.getElementById('sv-prod').value, cant: Number(document.getElementById('sv-cant').value || 0) })
+                title: 'SALIDA DE VACÍOS', html: html, showCancelButton: true, confirmButtonText: 'DESCONTAR Y REGISTRAR', confirmButtonColor: '#d97706',
+                preConfirm: () => ({
+                    id: document.getElementById('sv-prod').value,
+                    cant: Number(document.getElementById('sv-cant').value || 0),
+                    obs: document.getElementById('sv-obs').value.trim()
+                })
             });
             if (res.isConfirmed && res.value.cant > 0) {
                 let prod = db.productos.find(p => p.id === res.value.id);
                 if (!prod) return;
                 if (res.value.cant > Number(prod.stock_vacios || 0)) return Swal.fire('Error', 'No hay suficientes vacíos en bodega.', 'warning');
-                let updated = { ...prod, stock_vacios: Math.max(0, Number(prod.stock_vacios || 0) - res.value.cant) };
-                if (await enviarPOST('saveProducto', { data: updated })) Toast.fire({ icon: 'success', title: 'Salida de vacíos registrada' });
+                let payload = {
+                    producto_id: prod.id,
+                    producto_nombre: prod.nombre,
+                    cantidad: res.value.cant,
+                    observacion: res.value.obs || `Salida de vacíos (${sesionActiva.nombre})`
+                };
+                if (await enviarPOST('salidaVacios', payload)) Toast.fire({ icon: 'success', title: 'Salida de vacíos guardada en historial' });
             }
         }
 
