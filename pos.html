@@ -392,7 +392,7 @@
             }
         }
 
-        // ================= HISTORIAL Y DESCARGA IMAGEN =================
+        // ================= HISTORIAL, EDITAR Y ELIMINAR RECIBOS =================
         function renderHistorial() {
             let vtas = db.ventas.filter(v => String(v.fecha).includes(cajaAbierta.fecha)).sort((a,b)=> new Date(b.fecha_hora) - new Date(a.fecha_hora));
             let h = '';
@@ -429,10 +429,125 @@
                 html: htmlRecibo + `<div class="mt-4 flex flex-col gap-2">${btnW}
                     <button onclick="descargarImagenRecibo('${vta.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold w-full"><i class="fas fa-image mr-1"></i> Descargar Imagen (PNG)</button>
                     <button onclick="reimprimirFisico('${vta.id}')" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold w-full"><i class="fas fa-print mr-1"></i> Imprimir en Térmica</button>
+                    <div class="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-slate-200">
+                        <button onclick="editarRecibo('${vta.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fas fa-edit mr-1"></i> Editar Recibo</button>
+                        <button onclick="eliminarRecibo('${vta.id}')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fas fa-trash mr-1"></i> Eliminar</button>
+                    </div>
                     </div>`, 
                 showConfirmButton: false, showCloseButton: true
             });
         }
+
+        window.editarRecibo = async (idFac) => {
+            let vta = db.ventas.find(v => v.id === idFac);
+            if (!vta) return;
+            let itemsActuales = JSON.parse(vta.items_json || '[]');
+            let prodsActivos = db.productos.filter(p => p.activo === 'SI');
+
+            let optsCli = `<option value="CLI-00" ${vta.cliente_id === 'CLI-00' ? 'selected' : ''}>Cliente Mostrador General (Sin Desc)</option>`;
+            db.clientes.forEach(c => { if (c.id !== 'CLI-00') optsCli += `<option value="${c.id}" ${vta.cliente_id === c.id ? 'selected' : ''}>${c.nombre}</option>`; });
+
+            let optsVend = `<option value="|Punto de Venta" ${!vta.repartidor_id ? 'selected' : ''}>Punto de Venta (Patio)</option>`;
+            db.repartidores.filter(r => r.activo === 'SI').forEach(r => {
+                optsVend += `<option value="${r.id}|${r.nombre}" ${vta.repartidor_id === r.id ? 'selected' : ''}>${r.nombre}</option>`;
+            });
+
+            let filasProd = prodsActivos.map(p => {
+                let ex = itemsActuales.find(i => i.producto_id === p.id);
+                let qty = ex ? Number(ex.cantidad || 0) : 0;
+                return `<div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100">
+                    <span class="text-xs font-bold text-slate-700 text-left flex-1">${p.nombre}</span>
+                    <input type="number" min="0" id="ed-qty-${p.id}" value="${qty}" class="w-20 p-1.5 border border-slate-300 rounded text-center font-black text-sm">
+                </div>`;
+            }).join('');
+
+            let html = `<div class="text-left">
+                <label class="swal-label">Cliente</label>
+                <select id="ed-cli" class="swal-custom-input p-2 text-sm">${optsCli}</select>
+                <label class="swal-label">Vendedor</label>
+                <select id="ed-vend" class="swal-custom-input p-2 text-sm">${optsVend}</select>
+                <label class="swal-label">Método de Pago</label>
+                <select id="ed-met" class="swal-custom-input p-2 text-sm">
+                    <option value="Efectivo" ${vta.metodo_pago === 'Efectivo' ? 'selected' : ''}>Efectivo Físico</option>
+                    <option value="Nequi" ${vta.metodo_pago === 'Nequi' ? 'selected' : ''}>Nequi</option>
+                    <option value="Transferencia" ${vta.metodo_pago === 'Transferencia' ? 'selected' : ''}>Transferencia Bancaria</option>
+                </select>
+                <label class="swal-label mb-1">Cantidades de Productos</label>
+                <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 max-h-44 overflow-y-auto">${filasProd}</div>
+            </div>`;
+
+            let res = await Swal.fire({
+                title: `Editar Recibo ${vta.id}`, html: html, showCancelButton: true, confirmButtonText: 'GUARDAR CAMBIOS', confirmButtonColor: '#d97706',
+                preConfirm: () => {
+                    let cliId = document.getElementById('ed-cli').value;
+                    let cliName = document.getElementById('ed-cli').options[document.getElementById('ed-cli').selectedIndex].text;
+                    let [repId, repNom] = document.getElementById('ed-vend').value.split('|');
+                    let met = document.getElementById('ed-met').value;
+                    let cliObj = db.clientes.find(c => c.id === cliId) || db.clientes[0] || {};
+                    let nuevosItems = [];
+                    let total = 0;
+
+                    prodsActivos.forEach(p => {
+                        let q = Number(document.getElementById(`ed-qty-${p.id}`).value || 0);
+                        if (q > 0) {
+                            let d = 0;
+                            if (p.nombre.includes('100')) d = Number(cliObj.desc_100 || 0);
+                            if (p.nombre.includes('40')) d = Number(cliObj.desc_40 || 0);
+                            if (p.nombre.includes('30')) d = Number(cliObj.desc_30 || 0);
+                            let pFinal = Number(p.precio_venta) - d;
+                            total += pFinal * q;
+                            nuevosItems.push({ producto_id: p.id, producto_nombre: p.nombre, cantidad: q, precio_base: p.precio_venta, precio: pFinal });
+                        }
+                    });
+
+                    if (nuevosItems.length === 0) {
+                        Swal.showValidationMessage('Debes dejar al menos 1 producto con cantidad mayor a 0.');
+                        return false;
+                    }
+                    return { cliId, cliName, repId, repNom, met, nuevosItems, total };
+                }
+            });
+
+            if (res.isConfirmed) {
+                let d = res.value;
+                let vtaAct = {
+                    ...vta,
+                    cliente_id: d.cliId,
+                    cliente_nombre: d.cliName,
+                    repartidor_id: d.repId,
+                    repartidor_nombre: d.repId ? d.repNom : '',
+                    items_json: JSON.stringify(d.nuevosItems),
+                    subtotal: d.total,
+                    total: d.total,
+                    metodo_pago: d.met,
+                    pago_efectivo: d.met === 'Efectivo' ? d.total : 0,
+                    pago_nequi: d.met === 'Nequi' ? d.total : 0,
+                    pago_transf: d.met === 'Transferencia' ? d.total : 0
+                };
+                if (await enviarPOST('updateVenta', { data: vtaAct })) {
+                    Toast.fire({ icon: 'success', title: 'Recibo actualizado e inventario ajustado' });
+                }
+            }
+        };
+
+        window.eliminarRecibo = async (idFac) => {
+            let vta = db.ventas.find(v => v.id === idFac);
+            if (!vta) return;
+            let conf = await Swal.fire({
+                title: `¿Eliminar recibo ${vta.id}?`,
+                text: `Se eliminará de la base de datos (${formMoneda(vta.total)})${vta.origen === 'POS' ? ' y se devolverán los cilindros al inventario.' : '.'}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                confirmButtonColor: '#e11d48',
+                cancelButtonText: 'Cancelar'
+            });
+            if (conf.isConfirmed) {
+                if (await enviarPOST('deleteVenta', { id: idFac })) {
+                    Toast.fire({ icon: 'success', title: 'Recibo eliminado' });
+                }
+            }
+        };
 
         window.descargarImagenRecibo = (idFac) => {
             let reciboDiv = document.getElementById('recibo-capture');
