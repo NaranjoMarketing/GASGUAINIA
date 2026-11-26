@@ -669,7 +669,7 @@
             }
         }
 
-        // ================= MODIFICACIÓN QUIRÚRGICA: GENERAR INFORME P&G CON COSTO REAL =================
+        // ================= MODIFICACIÓN QUIRÚRGICA: GENERAR INFORME P&G CON COSTO REAL + 80 LB =================
         let datosParaExcel = [];
 
         function generarInforme() {
@@ -681,7 +681,7 @@
             let gs = db.gastos.filter(g => g.fecha >= start && g.fecha <= end);
 
             let tVentas = 0, tCMV = 0;
-            let qty30 = 0, total30 = 0, qty40 = 0, total40 = 0, qty100 = 0, total100 = 0;
+            let qty30 = 0, total30 = 0, qty40 = 0, total40 = 0, qty80 = 0, total80 = 0, qty100 = 0, total100 = 0;
 
             let htmlCronologia = '';
             
@@ -705,6 +705,7 @@
                     
                     if(it.producto_nombre.includes('30') || it.producto_nombre.includes('33')) { qty30 += Number(it.cantidad); total30 += (Number(it.cantidad)*Number(it.precio)); }
                     if(it.producto_nombre.includes('40')) { qty40 += Number(it.cantidad); total40 += (Number(it.cantidad)*Number(it.precio)); }
+                    if(it.producto_nombre.includes('80')) { qty80 += Number(it.cantidad); total80 += (Number(it.cantidad)*Number(it.precio)); }
                     if(it.producto_nombre.includes('100')) { qty100 += Number(it.cantidad); total100 += (Number(it.cantidad)*Number(it.precio)); }
                 });
             });
@@ -724,13 +725,14 @@
             let hRes = `
                 <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 33/30 lb</td><td class="p-3 text-center font-black">${qty30}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total30)}</td></tr>
                 <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 40 lb</td><td class="p-3 text-center font-black">${qty40}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total40)}</td></tr>
+                <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 80 lb</td><td class="p-3 text-center font-black">${qty80}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total80)}</td></tr>
                 <tr class="hover:bg-slate-100"><td class="p-3 font-bold text-slate-700"><i class="fas fa-gas-pump text-slate-400 mr-2"></i>Cilindro 100 lb</td><td class="p-3 text-center font-black">${qty100}</td><td class="p-3 text-right font-black text-emerald-600">${formMoneda(total100)}</td></tr>
-                <tr class="bg-indigo-50 border-t-2 border-indigo-200"><td class="p-4 font-black text-indigo-900">TOTALES PERIODO</td><td class="p-4 text-center font-black text-indigo-900 text-lg">${qty30+qty40+qty100} UND</td><td class="p-4 text-right font-black text-indigo-900 text-lg">${formMoneda(tVentas)}</td></tr>
+                <tr class="bg-indigo-50 border-t-2 border-indigo-200"><td class="p-4 font-black text-indigo-900">TOTALES PERIODO</td><td class="p-4 text-center font-black text-indigo-900 text-lg">${qty30+qty40+qty80+qty100} UND</td><td class="p-4 text-right font-black text-indigo-900 text-lg">${formMoneda(tVentas)}</td></tr>
             `;
             document.getElementById('lista-informe-ventas').innerHTML = hRes;
             document.getElementById('lista-cronologica').innerHTML = htmlCronologia || '<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay ventas registradas en este periodo.</td></tr>';
 
-            datosParaExcel.push(["Cilindro 33/30 lb", qty30, total30]); datosParaExcel.push(["Cilindro 40 lb", qty40, total40]); datosParaExcel.push(["Cilindro 100 lb", qty100, total100]); datosParaExcel.push(["TOTALES", qty30+qty40+qty100, tVentas]); datosParaExcel.push([]); datosParaExcel.push(["ESTADO DE RESULTADOS (P&G)"]); datosParaExcel.push(["(+) Ingresos por Ventas:", "", tVentas]); datosParaExcel.push(["(-) Costo Mercancía Vendida (CMV):", "", tCMV]); datosParaExcel.push(["(-) Total Gastos Fijos e Imprevistos:", "", tGastos]); datosParaExcel.push(["(=) UTILIDAD NETA REAL:", "", uNeta]); datosParaExcel.push([]); datosParaExcel.push(["DETALLE CRONOLÓGICO DE VENTAS"]); datosParaExcel.push(["Fecha", "Hora", "Cliente", "Origen / Repartidor", "Metodo Pago", "Total Facturado"]);
+            datosParaExcel.push(["Cilindro 33/30 lb", qty30, total30]); datosParaExcel.push(["Cilindro 40 lb", qty40, total40]); datosParaExcel.push(["Cilindro 80 lb", qty80, total80]); datosParaExcel.push(["Cilindro 100 lb", qty100, total100]); datosParaExcel.push(["TOTALES", qty30+qty40+qty80+qty100, tVentas]); datosParaExcel.push([]); datosParaExcel.push(["ESTADO DE RESULTADOS (P&G)"]); datosParaExcel.push(["(+) Ingresos por Ventas:", "", tVentas]); datosParaExcel.push(["(-) Costo Mercancía Vendida (CMV):", "", tCMV]); datosParaExcel.push(["(-) Total Gastos Fijos e Imprevistos:", "", tGastos]); datosParaExcel.push(["(=) UTILIDAD NETA REAL:", "", uNeta]); datosParaExcel.push([]); datosParaExcel.push(["DETALLE CRONOLÓGICO DE VENTAS"]); datosParaExcel.push(["Fecha", "Hora", "Cliente", "Origen / Repartidor", "Metodo Pago", "Total Facturado"]);
             vtas.forEach(v => { let fecha = v.fecha_hora ? v.fecha_hora.split('T')[0] : v.fecha; let hora = v.fecha_hora ? v.fecha_hora.split('T')[1].split('.')[0] : ''; datosParaExcel.push([fecha, hora, v.cliente_nombre, v.origen + (v.repartidor_nombre?' - '+v.repartidor_nombre:''), v.metodo_pago, Number(v.total)]); });
         }
 
