@@ -450,15 +450,30 @@
             let htmlF = '', htmlI = '';
             let totalF = 0, totalI = 0;
             db.gastos.forEach(g => {
-                let li = `<li class="py-3 flex justify-between items-center group">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-slate-700">${g.concepto}</span>
-                                <span class="text-xs text-slate-400">${g.fecha.split('T')[0]} | Ref: ${g.origen}</span>
-                            </div>
-                            <span class="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded">${formMoneda(g.monto)}</span>
-                          </li>`;
-                if(g.tipo_gasto === 'FIJO') { htmlF += li; totalF += Number(g.monto); } 
-                else { htmlI += li; totalI += Number(g.monto); }
+                let fechaLimpia = g.fecha ? String(g.fecha).split('T')[0].split(' ')[0] : '';
+                if(g.tipo_gasto === 'FIJO') {
+                    htmlF += `<li class="py-3 flex justify-between items-center gap-2 group">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">${g.concepto}</span>
+                                    <span class="text-xs text-slate-400">${fechaLimpia} | Ref: ${g.origen}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded">${formMoneda(g.monto)}</span>
+                                    <button onclick="abrirModalGasto('${g.id}')" class="bg-slate-100 hover:bg-indigo-100 text-indigo-600 px-2.5 py-1.5 rounded shadow-sm transition" title="Editar gasto fijo"><i class="fas fa-pen text-xs"></i></button>
+                                    <button onclick="eliminarGasto('${g.id}')" class="bg-slate-100 hover:bg-rose-100 text-rose-600 px-2.5 py-1.5 rounded shadow-sm transition" title="Eliminar gasto fijo"><i class="fas fa-trash text-xs"></i></button>
+                                </div>
+                              </li>`;
+                    totalF += Number(g.monto);
+                } else {
+                    htmlI += `<li class="py-3 flex justify-between items-center group">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">${g.concepto}</span>
+                                    <span class="text-xs text-slate-400">${fechaLimpia} | Ref: ${g.origen}</span>
+                                </div>
+                                <span class="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded">${formMoneda(g.monto)}</span>
+                              </li>`;
+                    totalI += Number(g.monto);
+                }
             });
             document.getElementById('lista-gastos-fijos').innerHTML = htmlF || '<li class="py-4 text-center text-slate-400 italic">Sin gastos fijos</li>';
             document.getElementById('lista-gastos-imprevistos').innerHTML = htmlI || '<li class="py-4 text-center text-slate-400 italic">Sin gastos imprevistos</li>';
@@ -602,25 +617,46 @@
             }
         }
 
-        async function abrirModalGasto() {
-            let date = new Date().toISOString().split('T')[0];
+        async function abrirModalGasto(id = null) {
+            let g = id ? (db.gastos.find(x => x.id === id) || {}) : {};
+            let date = g.fecha ? String(g.fecha).split('T')[0].split(' ')[0] : new Date().toISOString().split('T')[0];
             let html = `
                 <div class="text-left">
                     <label class="swal-label">Fecha del Gasto</label>
                     <input id="gas-fec" type="date" class="swal-custom-input" value="${date}">
                     <label class="swal-label">Tipo de Gasto</label>
-                    <select id="gas-tip" class="swal-custom-input"><option value="FIJO">Gasto Fijo (Nómina, Arriendo, Luz, etc)</option><option value="IMPREVISTO">Gasto Imprevisto / Extraordinario</option></select>
+                    <select id="gas-tip" class="swal-custom-input">
+                        <option value="FIJO" ${g.tipo_gasto === 'FIJO' ? 'selected' : ''}>Gasto Fijo (Nómina, Arriendo, Luz, etc)</option>
+                        <option value="IMPREVISTO" ${g.tipo_gasto === 'IMPREVISTO' ? 'selected' : ''}>Gasto Imprevisto / Extraordinario</option>
+                    </select>
                     <label class="swal-label">Concepto / Motivo</label>
-                    <input id="gas-con" class="swal-custom-input" placeholder="Ej: Pago publicidad radial">
+                    <input id="gas-con" class="swal-custom-input" placeholder="Ej: Pago publicidad radial" value="${g.concepto || ''}">
                     <label class="swal-label text-rose-700">Monto del Gasto ($)</label>
-                    <input id="gas-mon" type="number" class="swal-custom-input text-xl font-bold" placeholder="0">
+                    <input id="gas-mon" type="number" class="swal-custom-input text-xl font-bold" placeholder="0" value="${g.monto || ''}">
                 </div>
             `;
-            let { value: formValues } = await Swal.fire({ title: 'Registrar Gasto', html: html, showCancelButton: true, confirmButtonColor: '#e11d48' });
+            let { value: formValues } = await Swal.fire({ title: id ? 'Editar Gasto' : 'Registrar Gasto', html: html, showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: id ? 'Guardar Cambios' : 'Registrar' });
             if(formValues) {
-                let data = { id: 'GAS-' + Date.now(), fecha: document.getElementById('gas-fec').value, tipo_gasto: document.getElementById('gas-tip').value, origen: 'ADMIN', concepto: document.getElementById('gas-con').value, monto: document.getElementById('gas-mon').value };
+                let data = { id: id || 'GAS-' + Date.now(), fecha: document.getElementById('gas-fec').value, tipo_gasto: document.getElementById('gas-tip').value, origen: g.origen || 'ADMIN', concepto: document.getElementById('gas-con').value, monto: document.getElementById('gas-mon').value };
                 if(!data.concepto || !data.monto) return Swal.fire('Error', 'Concepto y Monto son obligatorios', 'error');
                 enviarPOST('saveGasto', { data: data });
+            }
+        }
+
+        async function eliminarGasto(id) {
+            let g = db.gastos.find(x => x.id === id);
+            if (!g) return;
+            let conf = await Swal.fire({
+                title: '¿Eliminar gasto fijo?',
+                text: `Se eliminará "${g.concepto}" por ${formMoneda(g.monto)} de la base de datos.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (conf.isConfirmed) {
+                enviarPOST('deleteGasto', { id: id });
             }
         }
 
