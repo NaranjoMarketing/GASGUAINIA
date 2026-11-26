@@ -202,6 +202,7 @@
         function clasificarCilindro(nombre) {
             let n = String(nombre || '').toLowerCase();
             if (n.includes('100')) return '100';
+            if (n.includes('80')) return '80';
             if (n.includes('40')) return '40';
             if (n.includes('30') || n.includes('33')) return '30';
             return 'otro';
@@ -233,14 +234,14 @@
             // 1. Ventas diarias
             let mapaDias = {};
             let mapaVend = {};
-            let totDia = { c30: 0, c40: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
+            let totDia = { c30: 0, c40: 0, c80: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
 
             vtas.forEach(v => {
                 let f = soloFecha(v.fecha || v.fecha_hora);
-                if (!mapaDias[f]) mapaDias[f] = { fecha: f, c30: 0, c40: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
+                if (!mapaDias[f]) mapaDias[f] = { fecha: f, c30: 0, c40: 0, c80: 0, c100: 0, unds: 0, ef: 0, bancos: 0, total: 0 };
 
                 let vend = (v.repartidor_nombre && String(v.repartidor_nombre).trim() !== '') ? String(v.repartidor_nombre).trim() : 'Ventanilla / Patio';
-                if (!mapaVend[vend]) mapaVend[vend] = { vendedor: vend, c30: 0, c40: 0, c100: 0, unds: 0, total: 0 };
+                if (!mapaVend[vend]) mapaVend[vend] = { vendedor: vend, c30: 0, c40: 0, c80: 0, c100: 0, unds: 0, total: 0 };
 
                 let ef = Number(v.pago_efectivo || 0);
                 let bancos = Number(v.pago_nequi || 0) + Number(v.pago_transf || 0);
@@ -261,6 +262,7 @@
                     let tipo = clasificarCilindro(it.producto_nombre);
                     if (tipo === '30') { mapaDias[f].c30 += cant; mapaVend[vend].c30 += cant; totDia.c30 += cant; }
                     if (tipo === '40') { mapaDias[f].c40 += cant; mapaVend[vend].c40 += cant; totDia.c40 += cant; }
+                    if (tipo === '80') { mapaDias[f].c80 += cant; mapaVend[vend].c80 += cant; totDia.c80 += cant; }
                     if (tipo === '100') { mapaDias[f].c100 += cant; mapaVend[vend].c100 += cant; totDia.c100 += cant; }
                     mapaDias[f].unds += cant;
                     mapaVend[vend].unds += cant;
@@ -392,22 +394,24 @@
                     <td class="p-1.5 font-bold">${r.fecha}</td>
                     <td class="p-1.5 text-center">${r.c30}</td>
                     <td class="p-1.5 text-center">${r.c40}</td>
+                    <td class="p-1.5 text-center">${r.c80}</td>
                     <td class="p-1.5 text-center">${r.c100}</td>
                     <td class="p-1.5 text-center font-bold">${r.unds}</td>
                     <td class="p-1.5 text-right">${formMoneda(r.ef)}</td>
                     <td class="p-1.5 text-right">${formMoneda(r.bancos)}</td>
                     <td class="p-1.5 text-right font-black">${formMoneda(r.total)}</td>
-                </tr>`).join('') || '<tr><td colspan="8" class="p-3 text-center text-slate-400">Sin ventas en este periodo.</td></tr>';
+                </tr>`).join('') || '<tr><td colspan="9" class="p-3 text-center text-slate-400">Sin ventas en este periodo.</td></tr>';
 
             let rowsVend = d.filasVend.map(r => `
                 <tr class="border-b border-slate-200">
                     <td class="p-1.5 font-bold">${r.vendedor}</td>
                     <td class="p-1.5 text-center">${r.c30}</td>
                     <td class="p-1.5 text-center">${r.c40}</td>
+                    <td class="p-1.5 text-center">${r.c80}</td>
                     <td class="p-1.5 text-center">${r.c100}</td>
                     <td class="p-1.5 text-center font-bold">${r.unds}</td>
                     <td class="p-1.5 text-right font-black">${formMoneda(r.total)}</td>
-                </tr>`).join('') || '<tr><td colspan="6" class="p-3 text-center text-slate-400">Sin ventas registradas.</td></tr>';
+                </tr>`).join('') || '<tr><td colspan="7" class="p-3 text-center text-slate-400">Sin ventas registradas.</td></tr>';
 
             let rowsGastos = d.gastos.map(g => `
                 <tr class="border-b border-slate-200">
@@ -441,6 +445,7 @@
                             <th class="p-1.5 text-left">Fecha</th>
                             <th class="p-1.5 text-center">33/30 lb</th>
                             <th class="p-1.5 text-center">40 lb</th>
+                            <th class="p-1.5 text-center">80 lb</th>
                             <th class="p-1.5 text-center">100 lb</th>
                             <th class="p-1.5 text-center">Unds</th>
                             <th class="p-1.5 text-right">Efectivo</th>
@@ -454,6 +459,7 @@
                             <td class="p-1.5">TOTALES</td>
                             <td class="p-1.5 text-center">${d.totDia.c30}</td>
                             <td class="p-1.5 text-center">${d.totDia.c40}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c80}</td>
                             <td class="p-1.5 text-center">${d.totDia.c100}</td>
                             <td class="p-1.5 text-center">${d.totDia.unds}</td>
                             <td class="p-1.5 text-right">${formMoneda(d.totDia.ef)}</td>
@@ -470,6 +476,7 @@
                             <th class="p-1.5 text-left">Vendedor / Canal</th>
                             <th class="p-1.5 text-center">33/30 lb</th>
                             <th class="p-1.5 text-center">40 lb</th>
+                            <th class="p-1.5 text-center">80 lb</th>
                             <th class="p-1.5 text-center">100 lb</th>
                             <th class="p-1.5 text-center">Total Unds</th>
                             <th class="p-1.5 text-right">Total Recaudado</th>
@@ -481,6 +488,7 @@
                             <td class="p-1.5">TOTAL GENERAL</td>
                             <td class="p-1.5 text-center">${d.totDia.c30}</td>
                             <td class="p-1.5 text-center">${d.totDia.c40}</td>
+                            <td class="p-1.5 text-center">${d.totDia.c80}</td>
                             <td class="p-1.5 text-center">${d.totDia.c100}</td>
                             <td class="p-1.5 text-center">${d.totDia.unds}</td>
                             <td class="p-1.5 text-right">${formMoneda(d.totDia.total)}</td>
@@ -820,20 +828,20 @@
 
                 tituloSeccionWord('1. TOTAL DE VENTAS DIARIAS EN EL CICLO'),
                 crearTablaWord(
-                    ['Fecha', '33/30 lb', '40 lb', '100 lb', 'Unds', 'Efectivo', 'Transf/Nequi', 'Total Venta'],
-                    d.filasDias.map(r => [r.fecha, r.c30, r.c40, r.c100, r.unds, formMoneda(r.ef), formMoneda(r.bancos), formMoneda(r.total)]),
-                    ['TOTALES', d.totDia.c30, d.totDia.c40, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.ef), formMoneda(d.totDia.bancos), formMoneda(d.totDia.total)],
-                    ['left', 'center', 'center', 'center', 'center', 'right', 'right', 'right'],
-                    [15, 9, 8, 9, 8, 17, 17, 17]
+                    ['Fecha', '33/30 lb', '40 lb', '80 lb', '100 lb', 'Unds', 'Efectivo', 'Transf/Nequi', 'Total Venta'],
+                    d.filasDias.map(r => [r.fecha, r.c30, r.c40, r.c80, r.c100, r.unds, formMoneda(r.ef), formMoneda(r.bancos), formMoneda(r.total)]),
+                    ['TOTALES', d.totDia.c30, d.totDia.c40, d.totDia.c80, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.ef), formMoneda(d.totDia.bancos), formMoneda(d.totDia.total)],
+                    ['left', 'center', 'center', 'center', 'center', 'center', 'right', 'right', 'right'],
+                    [14, 8, 7, 7, 8, 8, 16, 16, 16]
                 ),
 
                 tituloSeccionWord('2. VENTAS POR VENDEDOR / REPARTIDOR'),
                 crearTablaWord(
-                    ['Vendedor / Canal', '33/30 lb', '40 lb', '100 lb', 'Total Unds', 'Total Recaudado'],
-                    d.filasVend.map(r => [r.vendedor, r.c30, r.c40, r.c100, r.unds, formMoneda(r.total)]),
-                    ['TOTAL GENERAL', d.totDia.c30, d.totDia.c40, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.total)],
-                    ['left', 'center', 'center', 'center', 'center', 'right'],
-                    [34, 10, 10, 10, 12, 24],
+                    ['Vendedor / Canal', '33/30 lb', '40 lb', '80 lb', '100 lb', 'Total Unds', 'Total Recaudado'],
+                    d.filasVend.map(r => [r.vendedor, r.c30, r.c40, r.c80, r.c100, r.unds, formMoneda(r.total)]),
+                    ['TOTAL GENERAL', d.totDia.c30, d.totDia.c40, d.totDia.c80, d.totDia.c100, d.totDia.unds, formMoneda(d.totDia.total)],
+                    ['left', 'center', 'center', 'center', 'center', 'center', 'right'],
+                    [30, 9, 9, 9, 9, 11, 23],
                     '1E293B'
                 ),
 
